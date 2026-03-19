@@ -1,19 +1,23 @@
 import { Toaster } from "@/components/ui/sonner";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Settings } from "lucide-react";
+import { BookOpen, Loader2, Settings, Users, Wallet } from "lucide-react";
 import { useState } from "react";
 import { useActor } from "./hooks/useActor";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
+import ConstitutionPage from "./pages/ConstitutionPage";
+import FinancialPage from "./pages/FinancialPage";
 import LoginPage from "./pages/LoginPage";
 import MembersPage from "./pages/MembersPage";
 import SettingsPage from "./pages/SettingsPage";
 import { loadSettings } from "./store/settingsStore";
 
+type Page = "members" | "settings" | "constitution" | "financial";
+
 export default function App() {
   const { identity, login, clear, isInitializing, isLoggingIn } =
     useInternetIdentity();
   const { actor, isFetching } = useActor();
-  const [page, setPage] = useState<"members" | "settings">("members");
+  const [page, setPage] = useState<Page>("members");
   const [settingsVersion, setSettingsVersion] = useState(0);
 
   const roleQuery = useQuery({
@@ -26,10 +30,9 @@ export default function App() {
   });
 
   const isAdmin = roleQuery.data === "admin";
-  // Re-read settings whenever settingsVersion changes
   const orgSettings = loadSettings();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _sv = settingsVersion; // reference to trigger re-render
+  const _sv = settingsVersion;
 
   if (isInitializing) {
     return (
@@ -52,12 +55,19 @@ export default function App() {
     orgSettings.logoDataUrl ||
     "/assets/generated/apon-foundation-logo-transparent.dim_200x200.png";
 
+  const navItems: { key: Page; label: string; icon: React.ReactNode }[] = [
+    { key: "members", label: "সদস্য তালিকা", icon: <Users size={14} /> },
+    { key: "constitution", label: "গঠনতন্ত্র", icon: <BookOpen size={14} /> },
+    { key: "financial", label: "আর্থিক ব্যবস্থাপনা", icon: <Wallet size={14} /> },
+    { key: "settings", label: "সেটিং", icon: <Settings size={14} /> },
+  ];
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-border shadow-sm no-print">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <img
               src={logoSrc}
               alt="লোগো"
@@ -80,36 +90,27 @@ export default function App() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <nav className="flex gap-1" data-ocid="main.tab">
-              <button
-                type="button"
-                onClick={() => setPage("members")}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  page === "members"
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-secondary text-foreground"
-                }`}
-                data-ocid="nav.members.link"
-              >
-                সদস্য তালিকা
-              </button>
-              <button
-                type="button"
-                onClick={() => setPage("settings")}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                  page === "settings"
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-secondary text-foreground"
-                }`}
-                data-ocid="nav.settings.link"
-              >
-                <Settings size={15} />
-                সেটিং
-              </button>
+          <div className="flex items-center gap-3 min-w-0">
+            <nav className="flex flex-wrap gap-1" data-ocid="main.tab">
+              {navItems.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setPage(item.key)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                    page === item.key
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-secondary text-foreground"
+                  }`}
+                  data-ocid={`nav.${item.key}.link`}
+                >
+                  {item.icon}
+                  <span className="hidden sm:inline">{item.label}</span>
+                </button>
+              ))}
             </nav>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground hidden sm:block">
+            <div className="flex items-center gap-2 text-sm flex-shrink-0">
+              <span className="text-muted-foreground hidden lg:block">
                 {identity.getPrincipal().toString().slice(0, 12)}...
               </span>
               {isAdmin && (
@@ -132,6 +133,12 @@ export default function App() {
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6">
         {page === "members" && <MembersPage actor={actor} isAdmin={isAdmin} />}
+        {page === "constitution" && (
+          <ConstitutionPage actor={actor} isAdmin={isAdmin} />
+        )}
+        {page === "financial" && (
+          <FinancialPage actor={actor} isAdmin={isAdmin} />
+        )}
         {page === "settings" && (
           <SettingsPage
             onSave={() => {

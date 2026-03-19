@@ -26,7 +26,43 @@ actor {
     designation : Text;
   };
 
-  // ---- Legacy stable vars kept for upgrade compatibility (unused) ----
+  type ConstitutionChapter = {
+    id : Nat;
+    chapterNumber : Nat;
+    title : Text;
+    content : Text;
+  };
+
+  type IncomeRecord = {
+    id : Nat;
+    serialNumber : Nat;
+    date : Text;
+    category : Text;
+    donorName : Text;
+    donorAddress : Text;
+    mobile : Text;
+    amount : Float;
+    designation : Text;
+  };
+
+  type ExpenseRecord = {
+    id : Nat;
+    serialNumber : Nat;
+    date : Text;
+    category : Text;
+    recipientName : Text;
+    recipientAddress : Text;
+    mobile : Text;
+    amount : Float;
+    proofFileId : Text;
+  };
+
+  type ExpenseCategory = {
+    id : Nat;
+    name : Text;
+  };
+
+  // ---- Legacy stable vars kept for upgrade compatibility ----
   type LegacyMemberStatus = { #active; #inactive };
   type LegacyMembershipRole = { #member; #volunteer; #board };
   type LegacyMember = {
@@ -73,7 +109,6 @@ actor {
   };
   type LegacyUserProfile = { name : Text };
 
-  // Kept to satisfy upgrade compatibility (not used in new logic)
   let members = Map.empty<Principal, LegacyMember>();
   let donations = Map.empty<Nat, LegacyDonation>();
   let events = Map.empty<Nat, LegacyEvent>();
@@ -84,13 +119,35 @@ actor {
   var nextProjectId : Nat = 0;
   // ---- End legacy vars ----
 
+  // Authorization state
+  let accessControlState = AccessControl.initState();
+  include MixinAuthorization(accessControlState);
+
+  // Council Members
   var nextId : Nat = 0;
   var nextSerial : Nat = 1;
   let councilMembers = Map.empty<Nat, CouncilMember>();
 
-  // Authorization state
-  let accessControlState = AccessControl.initState();
-  include MixinAuthorization(accessControlState);
+  // Constitution
+  var nextChapterId : Nat = 0;
+  var nextChapterNumber : Nat = 1;
+  let chapters = Map.empty<Nat, ConstitutionChapter>();
+
+  // Income
+  var nextIncomeId : Nat = 0;
+  var nextIncomeSerial : Nat = 1;
+  let incomeRecords = Map.empty<Nat, IncomeRecord>();
+
+  // Expense
+  var nextExpenseId : Nat = 0;
+  var nextExpenseSerial : Nat = 1;
+  let expenseRecords = Map.empty<Nat, ExpenseRecord>();
+
+  // Expense Categories
+  var nextCategoryId : Nat = 0;
+  let expenseCategories = Map.empty<Nat, ExpenseCategory>();
+
+  // ===== Council Member functions =====
 
   public query ({ caller }) func getNextSerialNumber() : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -160,5 +217,165 @@ actor {
       Runtime.trap("Unauthorized: Only admins can delete members");
     };
     councilMembers.remove(id);
+  };
+
+  // ===== Constitution functions =====
+
+  public query func getAllChapters() : async [ConstitutionChapter] {
+    chapters.values().toArray();
+  };
+
+  public shared ({ caller }) func addChapter(title : Text, content : Text) : async ConstitutionChapter {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can add chapters");
+    };
+    let chapter : ConstitutionChapter = {
+      id = nextChapterId;
+      chapterNumber = nextChapterNumber;
+      title = title;
+      content = content;
+    };
+    chapters.add(nextChapterId, chapter);
+    nextChapterId += 1;
+    nextChapterNumber += 1;
+    chapter;
+  };
+
+  public shared ({ caller }) func updateChapter(id : Nat, title : Text, content : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can update chapters");
+    };
+    switch (chapters.get(id)) {
+      case (?existing) {
+        let updated : ConstitutionChapter = {
+          id = existing.id;
+          chapterNumber = existing.chapterNumber;
+          title = title;
+          content = content;
+        };
+        chapters.add(id, updated);
+      };
+      case null { Runtime.trap("Chapter not found") };
+    };
+  };
+
+  public shared ({ caller }) func deleteChapter(id : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can delete chapters");
+    };
+    chapters.remove(id);
+  };
+
+  // ===== Income functions =====
+
+  public query ({ caller }) func getAllIncomeRecords() : async [IncomeRecord] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized");
+    };
+    incomeRecords.values().toArray();
+  };
+
+  public shared ({ caller }) func addIncomeRecord(
+    date : Text,
+    category : Text,
+    donorName : Text,
+    donorAddress : Text,
+    mobile : Text,
+    amount : Float,
+    designation : Text,
+  ) : async IncomeRecord {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can add income records");
+    };
+    let record : IncomeRecord = {
+      id = nextIncomeId;
+      serialNumber = nextIncomeSerial;
+      date = date;
+      category = category;
+      donorName = donorName;
+      donorAddress = donorAddress;
+      mobile = mobile;
+      amount = amount;
+      designation = designation;
+    };
+    incomeRecords.add(nextIncomeId, record);
+    nextIncomeId += 1;
+    nextIncomeSerial += 1;
+    record;
+  };
+
+  public shared ({ caller }) func deleteIncomeRecord(id : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can delete income records");
+    };
+    incomeRecords.remove(id);
+  };
+
+  // ===== Expense functions =====
+
+  public query ({ caller }) func getAllExpenseRecords() : async [ExpenseRecord] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized");
+    };
+    expenseRecords.values().toArray();
+  };
+
+  public shared ({ caller }) func addExpenseRecord(
+    date : Text,
+    category : Text,
+    recipientName : Text,
+    recipientAddress : Text,
+    mobile : Text,
+    amount : Float,
+    proofFileId : Text,
+  ) : async ExpenseRecord {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can add expense records");
+    };
+    let record : ExpenseRecord = {
+      id = nextExpenseId;
+      serialNumber = nextExpenseSerial;
+      date = date;
+      category = category;
+      recipientName = recipientName;
+      recipientAddress = recipientAddress;
+      mobile = mobile;
+      amount = amount;
+      proofFileId = proofFileId;
+    };
+    expenseRecords.add(nextExpenseId, record);
+    nextExpenseId += 1;
+    nextExpenseSerial += 1;
+    record;
+  };
+
+  public shared ({ caller }) func deleteExpenseRecord(id : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can delete expense records");
+    };
+    expenseRecords.remove(id);
+  };
+
+  // ===== Expense Categories =====
+
+  public query func getAllExpenseCategories() : async [ExpenseCategory] {
+    expenseCategories.values().toArray();
+  };
+
+  public shared ({ caller }) func addExpenseCategory(name : Text) : async ExpenseCategory {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized");
+    };
+    let cat : ExpenseCategory = { id = nextCategoryId; name = name };
+    expenseCategories.add(nextCategoryId, cat);
+    nextCategoryId += 1;
+    cat;
+  };
+
+  public shared ({ caller }) func deleteExpenseCategory(id : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized");
+    };
+    expenseCategories.remove(id);
   };
 }

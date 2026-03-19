@@ -1,117 +1,122 @@
 import type { Principal } from "@icp-sdk/core/principal";
-export interface Some<T> {
-    __kind__: "Some";
-    value: T;
-}
-export interface None {
-    __kind__: "None";
-}
-export type Option<T> = Some<T> | None;
-export interface EventView {
-    id: bigint;
-    status: EventStatus;
-    title: string;
-    registeredAttendees: Array<Principal>;
-    maxAttendees: bigint;
-    date: bigint;
-    description: string;
-    location: string;
-}
-export interface Donation {
-    id: bigint;
-    memberId?: Principal;
-    date: bigint;
-    donorName: string;
-    notes: string;
-    category: DonationCategory;
-    amount: number;
-}
-export interface Member {
-    id: Principal;
-    status: MemberStatus;
-    joinDate: bigint;
-    name: string;
-    role: MembershipRole;
-    email: string;
-    notes: string;
-    phone: string;
-}
-export interface Project {
-    id: bigint;
-    status: ProjectStatus;
-    title: string;
-    endDate: bigint;
-    description: string;
-    spent: number;
-    budget: number;
-    startDate: bigint;
-}
-export interface DashboardStats {
-    totalActiveMembers: bigint;
-    activeProjectsCount: bigint;
-    totalDonationsSum: number;
-    upcomingEventsCount: bigint;
-}
-export interface UserProfile {
-    name: string;
-}
-export enum DonationCategory {
-    cash = "cash",
-    inKind = "inKind",
-    grant = "grant"
-}
-export enum EventStatus {
-    upcoming = "upcoming",
-    cancelled = "cancelled",
-    completed = "completed",
-    ongoing = "ongoing"
-}
-export enum MemberStatus {
-    active = "active",
-    inactive = "inactive"
-}
-export enum MembershipRole {
-    member = "member",
-    board = "board",
-    volunteer = "volunteer"
-}
-export enum ProjectStatus {
-    active = "active",
-    completed = "completed",
-    onHold = "onHold",
-    planning = "planning"
-}
+
 export enum UserRole {
-    admin = "admin",
-    user = "user",
-    guest = "guest"
+  admin = "admin",
+  user = "user",
+  guest = "guest",
 }
+
+export interface CouncilMember {
+  id: bigint;
+  serialNumber: bigint;
+  council: Council;
+  memberName: string;
+  fatherName: string;
+  mobile: string;
+  email: string;
+  bloodGroup: string;
+  currentAddress: string;
+  permanentAddress: string;
+  designation: string;
+}
+
+export type Council =
+  | { __kind__: "sadharanParishad" }
+  | { __kind__: "karyanirbahaParishad" }
+  | { __kind__: "upadeshataParishad" };
+
+export interface ConstitutionChapter {
+  id: bigint;
+  chapterNumber: bigint;
+  title: string;
+  content: string;
+}
+
+export interface IncomeRecord {
+  id: bigint;
+  serialNumber: bigint;
+  date: string;
+  category: string;
+  donorName: string;
+  donorAddress: string;
+  mobile: string;
+  amount: number;
+  designation: string;
+}
+
+export interface ExpenseRecord {
+  id: bigint;
+  serialNumber: bigint;
+  date: string;
+  category: string;
+  recipientName: string;
+  recipientAddress: string;
+  mobile: string;
+  amount: number;
+  proofFileId: string;
+}
+
+export interface ExpenseCategory {
+  id: bigint;
+  name: string;
+}
+
 export interface backendInterface {
-    addDonation(donation: Donation): Promise<void>;
-    addEvent(event: EventView): Promise<void>;
-    addMember(member: Member): Promise<void>;
-    addProject(project: Project): Promise<void>;
-    assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    deleteDonation(id: bigint): Promise<void>;
-    deleteEvent(id: bigint): Promise<void>;
-    deleteMember(id: Principal): Promise<void>;
-    deleteProject(id: bigint): Promise<void>;
-    getAllDonations(): Promise<Array<Donation>>;
-    getAllEvents(): Promise<Array<EventView>>;
-    getAllMembers(): Promise<Array<Member>>;
-    getAllProjects(): Promise<Array<Project>>;
-    getCallerUserProfile(): Promise<UserProfile | null>;
-    getCallerUserRole(): Promise<UserRole>;
-    getDashboardStats(): Promise<DashboardStats>;
-    getDonation(id: bigint): Promise<Donation | null>;
-    getEvent(id: bigint): Promise<EventView | null>;
-    getMember(id: Principal): Promise<Member | null>;
-    getProject(id: bigint): Promise<Project | null>;
-    getUserProfile(user: Principal): Promise<UserProfile | null>;
-    isCallerAdmin(): Promise<boolean>;
-    saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    updateDonation(id: bigint, updatedDonation: Donation): Promise<void>;
-    updateEvent(id: bigint, updatedEvent: EventView): Promise<void>;
-    updateMember(id: Principal, updatedMember: Member): Promise<void>;
-    updateProject(id: bigint, updatedProject: Project): Promise<void>;
+  getCallerUserRole(): Promise<UserRole>;
+  assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+
+  // Council Members
+  getNextSerialNumber(): Promise<bigint>;
+  getAllMembers(): Promise<Array<CouncilMember>>;
+  getMembersByCouncil(council: Council): Promise<Array<CouncilMember>>;
+  addMember(
+    council: Council,
+    memberName: string,
+    fatherName: string,
+    mobile: string,
+    email: string,
+    bloodGroup: string,
+    currentAddress: string,
+    permanentAddress: string,
+    designation: string
+  ): Promise<CouncilMember>;
+  updateMember(id: bigint, updated: CouncilMember): Promise<void>;
+  deleteMember(id: bigint): Promise<void>;
+
+  // Constitution
+  getAllChapters(): Promise<Array<ConstitutionChapter>>;
+  addChapter(title: string, content: string): Promise<ConstitutionChapter>;
+  updateChapter(id: bigint, title: string, content: string): Promise<void>;
+  deleteChapter(id: bigint): Promise<void>;
+
+  // Income
+  getAllIncomeRecords(): Promise<Array<IncomeRecord>>;
+  addIncomeRecord(
+    date: string,
+    category: string,
+    donorName: string,
+    donorAddress: string,
+    mobile: string,
+    amount: number,
+    designation: string
+  ): Promise<IncomeRecord>;
+  deleteIncomeRecord(id: bigint): Promise<void>;
+
+  // Expense
+  getAllExpenseRecords(): Promise<Array<ExpenseRecord>>;
+  addExpenseRecord(
+    date: string,
+    category: string,
+    recipientName: string,
+    recipientAddress: string,
+    mobile: string,
+    amount: number,
+    proofFileId: string
+  ): Promise<ExpenseRecord>;
+  deleteExpenseRecord(id: bigint): Promise<void>;
+
+  // Expense Categories
+  getAllExpenseCategories(): Promise<Array<ExpenseCategory>>;
+  addExpenseCategory(name: string): Promise<ExpenseCategory>;
+  deleteExpenseCategory(id: bigint): Promise<void>;
 }
