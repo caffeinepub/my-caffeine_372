@@ -292,9 +292,10 @@ ${buildOrgHeader(settings)}
 interface Props {
   actor: backendInterface | null;
   isAdmin: boolean;
+  defaultTab?: string;
 }
 
-export default function FinancialPage({ actor, isAdmin }: Props) {
+export default function FinancialPage({ actor, isAdmin, defaultTab }: Props) {
   const qc = useQueryClient();
 
   // Income categories (local, extendable)
@@ -814,7 +815,7 @@ export default function FinancialPage({ actor, isAdmin }: Props) {
         </Card>
       </div>
 
-      <Tabs defaultValue="income">
+      <Tabs defaultValue={defaultTab || "income"}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="income" data-ocid="financial.income.tab">
             <ArrowUpCircle size={14} className="mr-1.5" /> আয় (রসিদ)
@@ -901,19 +902,17 @@ export default function FinancialPage({ actor, isAdmin }: Props) {
                 type="number"
               />
             </div>
-            {isAdmin && (
-              <Button
-                onClick={() => {
-                  setEditIncomeTarget(null);
-                  setIncomeDialogOpen(true);
-                }}
-                style={{ background: "#166534" }}
-                className="text-white flex-shrink-0"
-                data-ocid="financial.income.open_modal_button"
-              >
-                <Plus size={16} className="mr-1" /> আয় যোগ করুন
-              </Button>
-            )}
+            <Button
+              onClick={() => {
+                setEditIncomeTarget(null);
+                setIncomeDialogOpen(true);
+              }}
+              style={{ background: "#166534" }}
+              className="text-white flex-shrink-0 text-base px-5 py-2"
+              data-ocid="financial.income.open_modal_button"
+            >
+              <Plus size={18} className="mr-2" /> ➕ নতুন আয় রেকর্ড করুন
+            </Button>
           </div>
           <Card>
             <CardContent className="pt-4 overflow-x-auto">
@@ -1100,19 +1099,17 @@ export default function FinancialPage({ actor, isAdmin }: Props) {
                 type="number"
               />
             </div>
-            {isAdmin && (
-              <Button
-                onClick={() => {
-                  setEditExpenseTarget(null);
-                  setExpenseDialogOpen(true);
-                }}
-                style={{ background: "#991b1b" }}
-                className="text-white flex-shrink-0"
-                data-ocid="financial.expense.open_modal_button"
-              >
-                <Plus size={16} className="mr-1" /> ব্যয় যোগ করুন
-              </Button>
-            )}
+            <Button
+              onClick={() => {
+                setEditExpenseTarget(null);
+                setExpenseDialogOpen(true);
+              }}
+              style={{ background: "#991b1b" }}
+              className="text-white flex-shrink-0 text-base px-5 py-2"
+              data-ocid="financial.expense.open_modal_button"
+            >
+              <Plus size={18} className="mr-2" /> ➕ নতুন ব্যয় রেকর্ড করুন
+            </Button>
           </div>
           <Card>
             <CardContent className="pt-4 overflow-x-auto">

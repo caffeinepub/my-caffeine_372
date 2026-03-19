@@ -4,9 +4,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Info, Save, Upload, X } from "lucide-react";
+import {
+  Building2,
+  Eye,
+  EyeOff,
+  Plus,
+  Save,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  addAdmin,
+  getAdmins,
+  getSuperAdmin,
+  removeAdmin,
+  updateSuperAdmin,
+} from "../store/adminAuthStore";
 import {
   type OrgSettings,
   loadSettings,
@@ -15,12 +31,30 @@ import {
 
 interface Props {
   onSave: () => void;
+  isSuperAdmin?: boolean;
 }
 
-export default function SettingsPage({ onSave }: Props) {
+export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
   const [settings, setSettings] = useState<OrgSettings>(loadSettings);
   const [original] = useState<OrgSettings>(loadSettings);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Super admin credentials form
+  const superAdmin = getSuperAdmin();
+  const [saEmail, setSaEmail] = useState(superAdmin?.email ?? "");
+  const [saPassword, setSaPassword] = useState("");
+  const [saConfirm, setSaConfirm] = useState("");
+  const [saShowPass, setSaShowPass] = useState(false);
+  const [saShowConfirm, setSaShowConfirm] = useState(false);
+  const [saError, setSaError] = useState("");
+
+  // Admin list
+  const [admins, setAdmins] = useState(() => getAdmins());
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [newAdminPassword, setNewAdminPassword] = useState("");
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [addError, setAddError] = useState("");
 
   const hasChanges = JSON.stringify(settings) !== JSON.stringify(original);
 
@@ -41,9 +75,57 @@ export default function SettingsPage({ onSave }: Props) {
     onSave();
   }
 
+  function handleSuperAdminUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    setSaError("");
+    if (!saEmail) {
+      setSaError("ইমেইল আবশ্যক");
+      return;
+    }
+    if (saPassword.length < 6) {
+      setSaError("পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে");
+      return;
+    }
+    if (saPassword !== saConfirm) {
+      setSaError("পাসওয়ার্ড মিলছে না");
+      return;
+    }
+    updateSuperAdmin(saEmail, saPassword);
+    setSaPassword("");
+    setSaConfirm("");
+    toast.success("সুপার এডমিন তথ্য আপডেট হয়েছে");
+  }
+
+  function handleAddAdmin(e: React.FormEvent) {
+    e.preventDefault();
+    setAddError("");
+    if (!newAdminEmail) {
+      setAddError("ইমেইল আবশ্যক");
+      return;
+    }
+    if (newAdminPassword.length < 6) {
+      setAddError("পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে");
+      return;
+    }
+    addAdmin(newAdminEmail, newAdminPassword);
+    setAdmins(getAdmins());
+    setNewAdminEmail("");
+    setNewAdminPassword("");
+    setShowAddForm(false);
+    toast.success("নতুন এডমিন যুক্ত হয়েছে");
+  }
+
+  function handleRemoveAdmin(email: string) {
+    removeAdmin(email);
+    setAdmins(getAdmins());
+    toast.success("এডমিন মুছে ফেলা হয়েছে");
+  }
+
   const logoSrc =
     settings.logoDataUrl ||
     "/assets/generated/apon-foundation-logo-transparent.dim_200x200.png";
+
+  const tabCols = isSuperAdmin ? "grid-cols-4" : "grid-cols-3";
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -63,7 +145,7 @@ export default function SettingsPage({ onSave }: Props) {
       </div>
 
       <Tabs defaultValue="identity">
-        <TabsList className="grid w-full grid-cols-3 mb-4">
+        <TabsList className={`grid w-full ${tabCols} mb-4`}>
           <TabsTrigger value="identity" data-ocid="settings.identity.tab">
             সংগঠনের পরিচয়
           </TabsTrigger>
@@ -73,6 +155,11 @@ export default function SettingsPage({ onSave }: Props) {
           <TabsTrigger value="admin" data-ocid="settings.admin.tab">
             অ্যাডমিন তথ্য
           </TabsTrigger>
+          {isSuperAdmin && (
+            <TabsTrigger value="adminmgmt" data-ocid="settings.adminmgmt.tab">
+              এডমিন ব্যবস্থাপনা
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Tab 1: Identity */}
@@ -85,7 +172,6 @@ export default function SettingsPage({ onSave }: Props) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                {/* Logo box */}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -106,7 +192,6 @@ export default function SettingsPage({ onSave }: Props) {
                     </div>
                   )}
                 </button>
-
                 <div className="flex flex-col gap-2">
                   <p className="text-sm text-muted-foreground">
                     PNG, JPG বা SVG ফাইল আপলোড করুন (সর্বোচ্চ ২ MB)
@@ -238,7 +323,6 @@ export default function SettingsPage({ onSave }: Props) {
             </CardContent>
           </Card>
 
-          {/* Live Preview */}
           <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
             <CardHeader>
               <CardTitle className="text-sm text-muted-foreground">
@@ -352,22 +436,248 @@ export default function SettingsPage({ onSave }: Props) {
             <CardContent>
               <Separator className="mb-4" />
               <div className="flex gap-3 items-start bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <Info
-                  size={18}
-                  className="text-blue-500 mt-0.5 flex-shrink-0"
-                />
                 <p className="text-sm text-blue-800">
-                  অ্যাডমিন রোল পরিবর্তন করতে আপনার <strong>Principal ID</strong>{" "}
-                  শেয়ার করুন। Internet Identity দিয়ে লগইন করার পর ড্যাশবোর্ডের উপরে
-                  আপনার Principal ID দেখা যাবে। সেটি কপি করে অ্যাডমিনকে পাঠান।
+                  এডমিন একাউন্ট পরিচালনার জন্য <strong>এডমিন ব্যবস্থাপনা</strong> ট্যাবে
+                  যান। সেখান থেকে সুপার এডমিনের ইমেইল ও পাসওয়ার্ড পরিবর্তন করা এবং নতুন
+                  এডমিন যোগ করা যাবে।
                 </p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Tab 4: Admin Management (super admin only) */}
+        {isSuperAdmin && (
+          <TabsContent value="adminmgmt" className="space-y-6">
+            {/* Section 1: Super Admin credentials */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base" style={{ color: "#1a6b2a" }}>
+                  সুপার এডমিন একাউন্ট
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSuperAdminUpdate} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sa-email">নতুন ইমেইল আইডি</Label>
+                    <Input
+                      id="sa-email"
+                      type="email"
+                      value={saEmail}
+                      onChange={(e) => setSaEmail(e.target.value)}
+                      placeholder="admin@aponfoundation.org"
+                      required
+                      data-ocid="settings.sa_email.input"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sa-password">নতুন পাসওয়ার্ড</Label>
+                    <div className="relative">
+                      <Input
+                        id="sa-password"
+                        type={saShowPass ? "text" : "password"}
+                        value={saPassword}
+                        onChange={(e) => setSaPassword(e.target.value)}
+                        placeholder="কমপক্ষে ৬ অক্ষর"
+                        required
+                        className="pr-10"
+                        data-ocid="settings.sa_password.input"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setSaShowPass((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {saShowPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sa-confirm">পাসওয়ার্ড নিশ্চিত করুন</Label>
+                    <div className="relative">
+                      <Input
+                        id="sa-confirm"
+                        type={saShowConfirm ? "text" : "password"}
+                        value={saConfirm}
+                        onChange={(e) => setSaConfirm(e.target.value)}
+                        placeholder="পাসওয়ার্ড পুনরায় দিন"
+                        required
+                        className="pr-10"
+                        data-ocid="settings.sa_confirm.input"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setSaShowConfirm((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {saShowConfirm ? (
+                          <EyeOff size={16} />
+                        ) : (
+                          <Eye size={16} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  {saError && (
+                    <p
+                      className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"
+                      data-ocid="settings.sa.error_state"
+                    >
+                      {saError}
+                    </p>
+                  )}
+                  <Button
+                    type="submit"
+                    style={{ background: "#1a6b2a" }}
+                    className="text-white gap-2"
+                    data-ocid="settings.sa.save_button"
+                  >
+                    <Save size={16} />
+                    পরিবর্তন সংরক্ষণ করুন
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Section 2: Admin list */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-base" style={{ color: "#1a6b2a" }}>
+                  এডমিন তালিকা
+                </CardTitle>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => {
+                    setShowAddForm((v) => !v);
+                    setAddError("");
+                  }}
+                  style={{ background: "#1a6b2a" }}
+                  className="text-white gap-1.5"
+                  data-ocid="settings.add_admin.button"
+                >
+                  <Plus size={14} />
+                  নতুন এডমিন যুক্ত করুন
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {showAddForm && (
+                  <form
+                    onSubmit={handleAddAdmin}
+                    className="bg-muted/50 border border-border rounded-lg p-4 space-y-3"
+                    data-ocid="settings.add_admin.panel"
+                  >
+                    <h3 className="text-sm font-semibold">নতুন এডমিন যোগ করুন</h3>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="new-admin-email">ইমেইল আইডি</Label>
+                      <Input
+                        id="new-admin-email"
+                        type="email"
+                        value={newAdminEmail}
+                        onChange={(e) => setNewAdminEmail(e.target.value)}
+                        placeholder="admin2@example.org"
+                        required
+                        data-ocid="settings.new_admin_email.input"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="new-admin-password">পাসওয়ার্ড</Label>
+                      <div className="relative">
+                        <Input
+                          id="new-admin-password"
+                          type={showNewPass ? "text" : "password"}
+                          value={newAdminPassword}
+                          onChange={(e) => setNewAdminPassword(e.target.value)}
+                          placeholder="কমপক্ষে ৬ অক্ষর"
+                          required
+                          className="pr-10"
+                          data-ocid="settings.new_admin_password.input"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPass((v) => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showNewPass ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    {addError && (
+                      <p
+                        className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"
+                        data-ocid="settings.add_admin.error_state"
+                      >
+                        {addError}
+                      </p>
+                    )}
+                    <div className="flex gap-2">
+                      <Button
+                        type="submit"
+                        size="sm"
+                        style={{ background: "#1a6b2a" }}
+                        className="text-white"
+                        data-ocid="settings.add_admin.submit_button"
+                      >
+                        যুক্ত করুন
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setShowAddForm(false);
+                          setAddError("");
+                        }}
+                        data-ocid="settings.add_admin.cancel_button"
+                      >
+                        বাতিল
+                      </Button>
+                    </div>
+                  </form>
+                )}
+
+                {admins.length === 0 ? (
+                  <p
+                    className="text-sm text-muted-foreground text-center py-6"
+                    data-ocid="settings.admins.empty_state"
+                  >
+                    কোনো এডমিন যুক্ত করা হয়নি
+                  </p>
+                ) : (
+                  <div className="space-y-2" data-ocid="settings.admins.list">
+                    {admins.map((admin, idx) => (
+                      <div
+                        key={admin.email}
+                        className="flex items-center justify-between px-4 py-3 bg-white border border-border rounded-lg"
+                        data-ocid={`settings.admin.item.${idx + 1}`}
+                      >
+                        <div>
+                          <p className="text-sm font-medium">{admin.email}</p>
+                          <p className="text-xs text-muted-foreground">এডমিন</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAdmin(admin.email)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          title="মুছুন"
+                          data-ocid={`settings.admin.delete_button.${idx + 1}`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
 
-      {/* Bottom Save Button (mobile-friendly) */}
       <div className="pb-6">
         <Button
           onClick={handleSave}

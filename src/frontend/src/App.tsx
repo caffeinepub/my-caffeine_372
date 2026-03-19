@@ -1,51 +1,69 @@
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/sonner";
-import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Loader2, Settings, Users, Wallet } from "lucide-react";
+import { BookOpen, Home, Menu, Settings, Users, Wallet } from "lucide-react";
 import { useState } from "react";
 import { useActor } from "./hooks/useActor";
-import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import ConstitutionPage from "./pages/ConstitutionPage";
+import DashboardPage from "./pages/DashboardPage";
 import FinancialPage from "./pages/FinancialPage";
 import LoginPage from "./pages/LoginPage";
 import MembersPage from "./pages/MembersPage";
 import SettingsPage from "./pages/SettingsPage";
+import {
+  type AuthSession,
+  getSession,
+  initAdminStore,
+  logoutAdmin,
+} from "./store/adminAuthStore";
 import { loadSettings } from "./store/settingsStore";
 
-type Page = "members" | "settings" | "constitution" | "financial";
+initAdminStore();
+
+export type Page =
+  | "dashboard"
+  | "members"
+  | "settings"
+  | "constitution"
+  | "financial";
 
 export default function App() {
-  const { identity, login, clear, isInitializing, isLoggingIn } =
-    useInternetIdentity();
-  const { actor, isFetching } = useActor();
-  const [page, setPage] = useState<Page>("members");
+  const { actor } = useActor();
+  const [session, setSession] = useState<AuthSession | null>(() =>
+    getSession(),
+  );
+  const [page, setPage] = useState<Page>("dashboard");
+  const [financialTab, setFinancialTab] = useState<string | undefined>(
+    undefined,
+  );
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsVersion, setSettingsVersion] = useState(0);
 
-  const roleQuery = useQuery({
-    queryKey: ["userRole", identity?.getPrincipal().toString()],
-    queryFn: async () => {
-      if (!actor || !identity) return "guest";
-      return await actor.getCallerUserRole();
-    },
-    enabled: !!actor && !isFetching,
-  });
-
-  const isAdmin = roleQuery.data === "admin";
+  const isAdmin = session?.role === "admin" || session?.role === "superadmin";
+  const isSuperAdmin = session?.role === "superadmin";
   const orgSettings = loadSettings();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _sv = settingsVersion;
 
-  if (isInitializing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
+  function navigate(targetPage: Page, tab?: string) {
+    setPage(targetPage);
+    if (tab) setFinancialTab(tab);
+    setSidebarOpen(false);
   }
 
-  if (!identity) {
+  function handleLogout() {
+    logoutAdmin();
+    setSession(null);
+  }
+
+  if (!session) {
     return (
       <>
-        <LoginPage onLogin={login} isLoggingIn={isLoggingIn} />
+        <LoginPage onLogin={(s) => setSession(s)} />
         <Toaster />
       </>
     );
@@ -56,10 +74,11 @@ export default function App() {
     "/assets/generated/apon-foundation-logo-transparent.dim_200x200.png";
 
   const navItems: { key: Page; label: string; icon: React.ReactNode }[] = [
-    { key: "members", label: "সদস্য তালিকা", icon: <Users size={14} /> },
-    { key: "constitution", label: "গঠনতন্ত্র", icon: <BookOpen size={14} /> },
-    { key: "financial", label: "আর্থিক ব্যবস্থাপনা", icon: <Wallet size={14} /> },
-    { key: "settings", label: "সেটিং", icon: <Settings size={14} /> },
+    { key: "dashboard", label: "ড্যাশবোর্ড", icon: <Home size={18} /> },
+    { key: "members", label: "সদস্য তালিকা", icon: <Users size={18} /> },
+    { key: "constitution", label: "গঠনতন্ত্র", icon: <BookOpen size={18} /> },
+    { key: "financial", label: "আর্থিক ব্যবস্থাপনা", icon: <Wallet size={18} /> },
+    { key: "settings", label: "সেটিং", icon: <Settings size={18} /> },
   ];
 
   return (
@@ -90,37 +109,35 @@ export default function App() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3 min-w-0">
-            <nav className="flex flex-wrap gap-1" data-ocid="main.tab">
-              {navItems.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setPage(item.key)}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-                    page === item.key
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-secondary text-foreground"
-                  }`}
-                  data-ocid={`nav.${item.key}.link`}
-                >
-                  {item.icon}
-                  <span className="hidden sm:inline">{item.label}</span>
-                </button>
-              ))}
-            </nav>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border border-border hover:bg-secondary transition-colors"
+              data-ocid="nav.menu.button"
+            >
+              <Menu size={18} />
+              <span>মেনু</span>
+            </button>
             <div className="flex items-center gap-2 text-sm flex-shrink-0">
-              <span className="text-muted-foreground hidden lg:block">
-                {identity.getPrincipal().toString().slice(0, 12)}...
+              <span className="text-muted-foreground hidden lg:block text-xs">
+                {session.email}
               </span>
-              {isAdmin && (
-                <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full font-medium">
-                  অ্যাডমিন
+              {isSuperAdmin ? (
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full font-medium text-white"
+                  style={{ background: "#1a6b2a" }}
+                >
+                  সুপার এডমিন
                 </span>
-              )}
+              ) : isAdmin ? (
+                <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                  এডমিন
+                </span>
+              ) : null}
               <button
                 type="button"
-                onClick={clear}
+                onClick={handleLogout}
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border"
                 data-ocid="nav.logout.button"
               >
@@ -131,18 +148,62 @@ export default function App() {
         </div>
       </header>
 
+      {/* Sidebar Sheet */}
+      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+        <SheetContent side="left" className="w-72 p-0" data-ocid="nav.sheet">
+          <SheetHeader className="p-4 border-b">
+            <SheetTitle
+              className="text-left text-base font-bold"
+              style={{ color: "#166534" }}
+            >
+              মেনু
+            </SheetTitle>
+          </SheetHeader>
+          <nav className="p-3 space-y-1">
+            {navItems.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => navigate(item.key)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-left ${
+                  page === item.key
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-secondary text-foreground"
+                }`}
+                data-ocid={`nav.${item.key}.link`}
+              >
+                {item.icon}
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        </SheetContent>
+      </Sheet>
+
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6">
+        {page === "dashboard" && (
+          <DashboardPage
+            actor={actor}
+            isAdmin={isAdmin}
+            onNavigate={navigate}
+          />
+        )}
         {page === "members" && <MembersPage actor={actor} isAdmin={isAdmin} />}
         {page === "constitution" && (
           <ConstitutionPage actor={actor} isAdmin={isAdmin} />
         )}
         {page === "financial" && (
-          <FinancialPage actor={actor} isAdmin={isAdmin} />
+          <FinancialPage
+            actor={actor}
+            isAdmin={isAdmin}
+            defaultTab={financialTab}
+          />
         )}
         {page === "settings" && (
           <SettingsPage
+            isSuperAdmin={isSuperAdmin}
             onSave={() => {
-              setPage("members");
+              setPage("dashboard");
               setSettingsVersion((v) => v + 1);
             }}
           />
