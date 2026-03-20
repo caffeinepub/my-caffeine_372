@@ -23,44 +23,6 @@ interface ConstitutionChapter {
   content: string;
 }
 
-const _SEED_CHAPTERS: ConstitutionChapter[] = [
-  {
-    id: 1n,
-    chapterNumber: 1n,
-    title: "প্রতিষ্ঠানের নাম ও পরিচিতি",
-    content:
-      "এই সংগঠনের নাম হবে 'আপন ফাউন্ডেশন'। ইহা একটি অরাজনৈতিক, অলাভজনক ও স্বেচ্ছাসেবী সামাজিক সংগঠন। সংগঠনটি বাংলাদেশের প্রচলিত আইন অনুযায়ী পরিচালিত হবে।",
-  },
-  {
-    id: 2n,
-    chapterNumber: 2n,
-    title: "উদ্দেশ্য ও লক্ষ্য",
-    content:
-      "সমাজের সুবিধাবঞ্চিত মানুষদের শিক্ষা, স্বাস্থ্য ও সামাজিক উন্নয়নে কাজ করা। দারিদ্র্য বিমোচনে কার্যকর ভূমিকা পালন করা। শীতবস্ত্র বিতরণ, শিক্ষা উপকরণ সহায়তা এবং মানবিক সেবা প্রদান করা।",
-  },
-  {
-    id: 3n,
-    chapterNumber: 3n,
-    title: "সদস্যপদ",
-    content:
-      "বাংলাদেশের যেকোনো নাগরিক যিনি সংগঠনের উদ্দেশ্য ও লক্ষ্যে বিশ্বাসী এবং সংগঠনের গঠনতন্ত্র মেনে চলতে সম্মত, তিনি সদস্য হতে পারবেন। সদস্যপদের জন্য নির্ধারিত ফর্ম পূরণ করে কার্যনির্বাহী পরিষদের কাছে আবেদন করতে হবে।",
-  },
-  {
-    id: 4n,
-    chapterNumber: 4n,
-    title: "সাংগঠনিক কাঠামো",
-    content:
-      "সংগঠনটি তিনটি পরিষদ নিয়ে গঠিত: (১) সাধারণ পরিষদ — সকল নিয়মিত সদস্য নিয়ে গঠিত। (২) কার্যনির্বাহী পরিষদ — সংগঠনের দৈনন্দিন কার্যক্রম পরিচালনা করে। (৩) উপদেষ্টা পরিষদ — সংগঠনের কার্যক্রমে পরামর্শ ও দিকনির্দেশনা প্রদান করে।",
-  },
-  {
-    id: 5n,
-    chapterNumber: 5n,
-    title: "আর্থিক ব্যবস্থাপনা",
-    content:
-      "সংগঠনের সকল আয়-ব্যয়ের হিসাব সুষ্ঠুভাবে সংরক্ষণ করতে হবে। প্রতি অর্থবছর শেষে অডিট সম্পন্ন করতে হবে। সদস্যদের ত্রৈমাসিক চাঁদা ও বাহিরের অনুদান সংগঠনের প্রধান আয়ের উৎস।",
-  },
-];
-
 interface Props {
   actor: backendInterface | null;
   isAdmin: boolean;
@@ -73,7 +35,7 @@ interface FormState {
 
 const emptyForm: FormState = { title: "", content: "" };
 
-export default function ConstitutionPage({ actor }: Props) {
+export default function ConstitutionPage({ actor, isAdmin }: Props) {
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editChapter, setEditChapter] = useState<ConstitutionChapter | null>(
@@ -152,7 +114,6 @@ export default function ConstitutionPage({ actor }: Props) {
       setForm(emptyForm);
     },
     onError: () => {
-      // Fallback: save to localStorage
       const current = chapters;
       const newId = BigInt(Date.now());
       const newChapter: ConstitutionChapter = {
@@ -162,18 +123,7 @@ export default function ConstitutionPage({ actor }: Props) {
         content: form.content,
       };
       const updated = [...current, newChapter];
-      try {
-        localStorage.setItem(
-          "aponConstitutionChapters",
-          JSON.stringify(
-            updated.map((c) => ({
-              ...c,
-              id: String(c.id),
-              chapterNumber: String(c.chapterNumber),
-            })),
-          ),
-        );
-      } catch {}
+      saveToLS(updated);
       qc.setQueryData(["chapters"], updated);
       toast.success("অধ্যায় যোগ করা হয়েছে (স্থানীয়ভাবে)");
       setDialogOpen(false);
@@ -197,25 +147,13 @@ export default function ConstitutionPage({ actor }: Props) {
       setForm(emptyForm);
     },
     onError: () => {
-      // Fallback: update localStorage
       if (editChapter) {
         const updated = chapters.map((c) =>
           c.id === editChapter.id
             ? { ...c, title: form.title, content: form.content }
             : c,
         );
-        try {
-          localStorage.setItem(
-            "aponConstitutionChapters",
-            JSON.stringify(
-              updated.map((c) => ({
-                ...c,
-                id: String(c.id),
-                chapterNumber: String(c.chapterNumber),
-              })),
-            ),
-          );
-        } catch {}
+        saveToLS(updated);
         qc.setQueryData(["chapters"], updated);
         toast.success("অধ্যায় আপডেট হয়েছে (স্থানীয়ভাবে)");
         setDialogOpen(false);
@@ -236,20 +174,8 @@ export default function ConstitutionPage({ actor }: Props) {
       setDeleteTarget(null);
     },
     onError: (_, id) => {
-      // Fallback: delete from localStorage
       const updated = chapters.filter((c) => c.id !== id);
-      try {
-        localStorage.setItem(
-          "aponConstitutionChapters",
-          JSON.stringify(
-            updated.map((c) => ({
-              ...c,
-              id: String(c.id),
-              chapterNumber: String(c.chapterNumber),
-            })),
-          ),
-        );
-      } catch {}
+      saveToLS(updated);
       qc.setQueryData(["chapters"], updated);
       toast.success("অধ্যায় মুছে ফেলা হয়েছে (স্থানীয়ভাবে)");
       setDeleteTarget(null);
@@ -293,14 +219,16 @@ export default function ConstitutionPage({ actor }: Props) {
           <BookOpen size={24} style={{ color: "#166534" }} />
           <h1 className="text-2xl font-bold text-foreground">গঠনতন্ত্র</h1>
         </div>
-        <Button
-          onClick={openAdd}
-          style={{ background: "#166534" }}
-          className="text-white"
-          data-ocid="constitution.open_modal_button"
-        >
-          <Plus size={16} className="mr-1" /> নতুন অধ্যায় যোগ করুন
-        </Button>
+        {isAdmin && (
+          <Button
+            onClick={openAdd}
+            style={{ background: "#166534" }}
+            className="text-white"
+            data-ocid="constitution.open_modal_button"
+          >
+            <Plus size={16} className="mr-1" /> নতুন অধ্যায় যোগ করুন
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -343,26 +271,28 @@ export default function ConstitutionPage({ actor }: Props) {
                       {ch.title}
                     </CardTitle>
                   </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => openEdit(ch)}
-                      className="h-7 w-7"
-                      data-ocid={`constitution.edit_button.${idx + 1}`}
-                    >
-                      <Pencil size={13} />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => setDeleteTarget(ch)}
-                      className="h-7 w-7 text-destructive hover:text-destructive"
-                      data-ocid={`constitution.delete_button.${idx + 1}`}
-                    >
-                      <Trash2 size={13} />
-                    </Button>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => openEdit(ch)}
+                        className="h-7 w-7"
+                        data-ocid={`constitution.edit_button.${idx + 1}`}
+                      >
+                        <Pencil size={13} />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => setDeleteTarget(ch)}
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        data-ocid={`constitution.delete_button.${idx + 1}`}
+                      >
+                        <Trash2 size={13} />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -375,107 +305,116 @@ export default function ConstitutionPage({ actor }: Props) {
         </div>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl" data-ocid="constitution.dialog">
-          <DialogHeader>
-            <DialogTitle style={{ color: "#166534" }}>
-              {editChapter ? "অধ্যায় সম্পাদনা" : "নতুন অধ্যায় যোগ করুন"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                অধ্যায়ের শিরোনাম *
-              </Label>
-              <Input
-                value={form.title}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, title: e.target.value }))
-                }
-                placeholder="অধ্যায়ের শিরোনাম লিখুন"
-                className="mt-1"
-                data-ocid="constitution.dialog.input"
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                বিষয়বস্তু *
-              </Label>
-              <Textarea
-                value={form.content}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, content: e.target.value }))
-                }
-                placeholder="অধ্যায়ের বিস্তারিত বিষয়বস্তু লিখুন"
-                rows={8}
-                className="mt-1"
-                data-ocid="constitution.dialog.textarea"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDialogOpen(false);
-                setEditChapter(null);
-              }}
-              data-ocid="constitution.dialog.cancel_button"
+      {isAdmin && (
+        <>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogContent
+              className="max-w-2xl"
+              data-ocid="constitution.dialog"
             >
-              বাতিল
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={isMutating}
-              style={{ background: "#166534" }}
-              className="text-white"
-              data-ocid="constitution.dialog.submit_button"
-            >
-              {isMutating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {editChapter ? "আপডেট করুন" : "সংরক্ষণ করুন"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <DialogHeader>
+                <DialogTitle style={{ color: "#166534" }}>
+                  {editChapter ? "অধ্যায় সম্পাদনা" : "নতুন অধ্যায় যোগ করুন"}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div>
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    অধ্যায়ের শিরোনাম *
+                  </Label>
+                  <Input
+                    value={form.title}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, title: e.target.value }))
+                    }
+                    placeholder="অধ্যায়ের শিরোনাম লিখুন"
+                    className="mt-1"
+                    data-ocid="constitution.dialog.input"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    বিষয়বস্তু *
+                  </Label>
+                  <Textarea
+                    value={form.content}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, content: e.target.value }))
+                    }
+                    placeholder="অধ্যায়ের বিস্তারিত বিষয়বস্তু লিখুন"
+                    rows={8}
+                    className="mt-1"
+                    data-ocid="constitution.dialog.textarea"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDialogOpen(false);
+                    setEditChapter(null);
+                  }}
+                  data-ocid="constitution.dialog.cancel_button"
+                >
+                  বাতিল
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isMutating}
+                  style={{ background: "#166534" }}
+                  className="text-white"
+                  data-ocid="constitution.dialog.submit_button"
+                >
+                  {isMutating && (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  )}
+                  {editChapter ? "আপডেট করুন" : "সংরক্ষণ করুন"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
-      <Dialog
-        open={!!deleteTarget}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
-      >
-        <DialogContent data-ocid="constitution.delete.dialog">
-          <DialogHeader>
-            <DialogTitle style={{ color: "#991b1b" }}>
-              অধ্যায় মুছে ফেলুন
-            </DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            আপনি কি নিশ্চিত যে <strong>"{deleteTarget?.title}"</strong> অধ্যায়টি
-            মুছে ফেলতে চান?
-          </p>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteTarget(null)}
-              data-ocid="constitution.delete.cancel_button"
-            >
-              না, বাতিল
-            </Button>
-            <Button
-              onClick={() =>
-                deleteTarget && deleteMutation.mutate(deleteTarget.id)
-              }
-              disabled={deleteMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              data-ocid="constitution.delete.confirm_button"
-            >
-              {deleteMutation.isPending && (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              )}
-              হ্যাঁ, মুছে ফেলুন
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <Dialog
+            open={!!deleteTarget}
+            onOpenChange={(o) => !o && setDeleteTarget(null)}
+          >
+            <DialogContent data-ocid="constitution.delete.dialog">
+              <DialogHeader>
+                <DialogTitle style={{ color: "#991b1b" }}>
+                  অধ্যায় মুছে ফেলুন
+                </DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">
+                আপনি কি নিশ্চিত যে <strong>"{deleteTarget?.title}"</strong>{" "}
+                অধ্যায়টি মুছে ফেলতে চান?
+              </p>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteTarget(null)}
+                  data-ocid="constitution.delete.cancel_button"
+                >
+                  না, বাতিল
+                </Button>
+                <Button
+                  onClick={() =>
+                    deleteTarget && deleteMutation.mutate(deleteTarget.id)
+                  }
+                  disabled={deleteMutation.isPending}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  data-ocid="constitution.delete.confirm_button"
+                >
+                  {deleteMutation.isPending && (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  )}
+                  হ্যাঁ, মুছে ফেলুন
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </div>
   );
 }

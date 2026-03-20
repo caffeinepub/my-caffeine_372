@@ -8,70 +8,66 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const DonationCategory = IDL.Variant({
-  'cash' : IDL.Null,
-  'inKind' : IDL.Null,
-  'grant' : IDL.Null,
+export const _CaffeineStorageCreateCertificateResult = IDL.Record({
+  'method' : IDL.Text,
+  'blob_hash' : IDL.Text,
 });
-export const Donation = IDL.Record({
+export const _CaffeineStorageRefillInformation = IDL.Record({
+  'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
+});
+export const _CaffeineStorageRefillResult = IDL.Record({
+  'success' : IDL.Opt(IDL.Bool),
+  'topped_up_amount' : IDL.Opt(IDL.Nat),
+});
+export const ConstitutionChapter = IDL.Record({
   'id' : IDL.Nat,
-  'memberId' : IDL.Opt(IDL.Principal),
-  'date' : IDL.Int,
+  'title' : IDL.Text,
+  'content' : IDL.Text,
+  'chapterNumber' : IDL.Nat,
+});
+export const ExpenseCategory = IDL.Record({
+  'id' : IDL.Nat,
+  'name' : IDL.Text,
+});
+export const ExpenseRecord = IDL.Record({
+  'id' : IDL.Nat,
+  'date' : IDL.Text,
+  'proofFileId' : IDL.Text,
+  'serialNumber' : IDL.Nat,
+  'category' : IDL.Text,
+  'mobile' : IDL.Text,
+  'recipientAddress' : IDL.Text,
+  'amount' : IDL.Float64,
+  'recipientName' : IDL.Text,
+});
+export const IncomeRecord = IDL.Record({
+  'id' : IDL.Nat,
+  'date' : IDL.Text,
+  'designation' : IDL.Text,
   'donorName' : IDL.Text,
-  'notes' : IDL.Text,
-  'category' : DonationCategory,
+  'donorAddress' : IDL.Text,
+  'serialNumber' : IDL.Nat,
+  'category' : IDL.Text,
+  'mobile' : IDL.Text,
   'amount' : IDL.Float64,
 });
-export const EventStatus = IDL.Variant({
-  'upcoming' : IDL.Null,
-  'cancelled' : IDL.Null,
-  'completed' : IDL.Null,
-  'ongoing' : IDL.Null,
+export const Council = IDL.Variant({
+  'upadeshataParishad' : IDL.Null,
+  'sadharanParishad' : IDL.Null,
+  'karyanirbahaParishad' : IDL.Null,
 });
-export const EventView = IDL.Record({
+export const CouncilMember = IDL.Record({
   'id' : IDL.Nat,
-  'status' : EventStatus,
-  'title' : IDL.Text,
-  'registeredAttendees' : IDL.Vec(IDL.Principal),
-  'maxAttendees' : IDL.Nat,
-  'date' : IDL.Int,
-  'description' : IDL.Text,
-  'location' : IDL.Text,
-});
-export const MemberStatus = IDL.Variant({
-  'active' : IDL.Null,
-  'inactive' : IDL.Null,
-});
-export const MembershipRole = IDL.Variant({
-  'member' : IDL.Null,
-  'board' : IDL.Null,
-  'volunteer' : IDL.Null,
-});
-export const Member = IDL.Record({
-  'id' : IDL.Principal,
-  'status' : MemberStatus,
-  'joinDate' : IDL.Int,
-  'name' : IDL.Text,
-  'role' : MembershipRole,
+  'council' : Council,
+  'designation' : IDL.Text,
   'email' : IDL.Text,
-  'notes' : IDL.Text,
-  'phone' : IDL.Text,
-});
-export const ProjectStatus = IDL.Variant({
-  'active' : IDL.Null,
-  'completed' : IDL.Null,
-  'onHold' : IDL.Null,
-  'planning' : IDL.Null,
-});
-export const Project = IDL.Record({
-  'id' : IDL.Nat,
-  'status' : ProjectStatus,
-  'title' : IDL.Text,
-  'endDate' : IDL.Int,
-  'description' : IDL.Text,
-  'spent' : IDL.Float64,
-  'budget' : IDL.Float64,
-  'startDate' : IDL.Int,
+  'permanentAddress' : IDL.Text,
+  'serialNumber' : IDL.Nat,
+  'fatherName' : IDL.Text,
+  'bloodGroup' : IDL.Text,
+  'memberName' : IDL.Text,
+  'currentAddress' : IDL.Text,
+  'mobile' : IDL.Text,
 });
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
@@ -79,35 +75,85 @@ export const UserRole = IDL.Variant({
   'guest' : IDL.Null,
 });
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
-export const DashboardStats = IDL.Record({
-  'totalActiveMembers' : IDL.Nat,
-  'activeProjectsCount' : IDL.Nat,
-  'totalDonationsSum' : IDL.Float64,
-  'upcomingEventsCount' : IDL.Nat,
-});
 
 export const idlService = IDL.Service({
+  '_caffeineStorageBlobIsLive' : IDL.Func(
+      [IDL.Vec(IDL.Nat8)],
+      [IDL.Bool],
+      ['query'],
+    ),
+  '_caffeineStorageBlobsToDelete' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Vec(IDL.Nat8))],
+      ['query'],
+    ),
+  '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
+      [IDL.Vec(IDL.Vec(IDL.Nat8))],
+      [],
+      [],
+    ),
+  '_caffeineStorageCreateCertificate' : IDL.Func(
+      [IDL.Text],
+      [_CaffeineStorageCreateCertificateResult],
+      [],
+    ),
+  '_caffeineStorageRefillCashier' : IDL.Func(
+      [IDL.Opt(_CaffeineStorageRefillInformation)],
+      [_CaffeineStorageRefillResult],
+      [],
+    ),
+  '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-  'addDonation' : IDL.Func([Donation], [], []),
-  'addEvent' : IDL.Func([EventView], [], []),
-  'addMember' : IDL.Func([Member], [], []),
-  'addProject' : IDL.Func([Project], [], []),
+  'addChapter' : IDL.Func([IDL.Text, IDL.Text], [ConstitutionChapter], []),
+  'addExpenseCategory' : IDL.Func([IDL.Text], [ExpenseCategory], []),
+  'addExpenseRecord' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Float64, IDL.Text],
+      [ExpenseRecord],
+      [],
+    ),
+  'addIncomeRecord' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Float64, IDL.Text],
+      [IncomeRecord],
+      [],
+    ),
+  'addMember' : IDL.Func(
+      [
+        Council,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+      ],
+      [CouncilMember],
+      [],
+    ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'deleteDonation' : IDL.Func([IDL.Nat], [], []),
-  'deleteEvent' : IDL.Func([IDL.Nat], [], []),
-  'deleteMember' : IDL.Func([IDL.Principal], [], []),
-  'deleteProject' : IDL.Func([IDL.Nat], [], []),
-  'getAllDonations' : IDL.Func([], [IDL.Vec(Donation)], ['query']),
-  'getAllEvents' : IDL.Func([], [IDL.Vec(EventView)], ['query']),
-  'getAllMembers' : IDL.Func([], [IDL.Vec(Member)], ['query']),
-  'getAllProjects' : IDL.Func([], [IDL.Vec(Project)], ['query']),
+  'deleteChapter' : IDL.Func([IDL.Nat], [], []),
+  'deleteExpenseCategory' : IDL.Func([IDL.Nat], [], []),
+  'deleteExpenseRecord' : IDL.Func([IDL.Nat], [], []),
+  'deleteIncomeRecord' : IDL.Func([IDL.Nat], [], []),
+  'deleteMember' : IDL.Func([IDL.Nat], [], []),
+  'getAllChapters' : IDL.Func([], [IDL.Vec(ConstitutionChapter)], ['query']),
+  'getAllExpenseCategories' : IDL.Func(
+      [],
+      [IDL.Vec(ExpenseCategory)],
+      ['query'],
+    ),
+  'getAllExpenseRecords' : IDL.Func([], [IDL.Vec(ExpenseRecord)], ['query']),
+  'getAllIncomeRecords' : IDL.Func([], [IDL.Vec(IncomeRecord)], ['query']),
+  'getAllMembers' : IDL.Func([], [IDL.Vec(CouncilMember)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getDashboardStats' : IDL.Func([], [DashboardStats], ['query']),
-  'getDonation' : IDL.Func([IDL.Nat], [IDL.Opt(Donation)], ['query']),
-  'getEvent' : IDL.Func([IDL.Nat], [IDL.Opt(EventView)], ['query']),
-  'getMember' : IDL.Func([IDL.Principal], [IDL.Opt(Member)], ['query']),
-  'getProject' : IDL.Func([IDL.Nat], [IDL.Opt(Project)], ['query']),
+  'getMembersByCouncil' : IDL.Func(
+      [Council],
+      [IDL.Vec(CouncilMember)],
+      ['query'],
+    ),
+  'getNextSerialNumber' : IDL.Func([], [IDL.Nat], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
@@ -115,79 +161,72 @@ export const idlService = IDL.Service({
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-  'updateDonation' : IDL.Func([IDL.Nat, Donation], [], []),
-  'updateEvent' : IDL.Func([IDL.Nat, EventView], [], []),
-  'updateMember' : IDL.Func([IDL.Principal, Member], [], []),
-  'updateProject' : IDL.Func([IDL.Nat, Project], [], []),
+  'updateChapter' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [], []),
+  'updateExpenseRecord' : IDL.Func([IDL.Nat, ExpenseRecord], [], []),
+  'updateIncomeRecord' : IDL.Func([IDL.Nat, IncomeRecord], [], []),
+  'updateMember' : IDL.Func([IDL.Nat, CouncilMember], [], []),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
-  const DonationCategory = IDL.Variant({
-    'cash' : IDL.Null,
-    'inKind' : IDL.Null,
-    'grant' : IDL.Null,
+  const _CaffeineStorageCreateCertificateResult = IDL.Record({
+    'method' : IDL.Text,
+    'blob_hash' : IDL.Text,
   });
-  const Donation = IDL.Record({
+  const _CaffeineStorageRefillInformation = IDL.Record({
+    'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
+  });
+  const _CaffeineStorageRefillResult = IDL.Record({
+    'success' : IDL.Opt(IDL.Bool),
+    'topped_up_amount' : IDL.Opt(IDL.Nat),
+  });
+  const ConstitutionChapter = IDL.Record({
     'id' : IDL.Nat,
-    'memberId' : IDL.Opt(IDL.Principal),
-    'date' : IDL.Int,
+    'title' : IDL.Text,
+    'content' : IDL.Text,
+    'chapterNumber' : IDL.Nat,
+  });
+  const ExpenseCategory = IDL.Record({ 'id' : IDL.Nat, 'name' : IDL.Text });
+  const ExpenseRecord = IDL.Record({
+    'id' : IDL.Nat,
+    'date' : IDL.Text,
+    'proofFileId' : IDL.Text,
+    'serialNumber' : IDL.Nat,
+    'category' : IDL.Text,
+    'mobile' : IDL.Text,
+    'recipientAddress' : IDL.Text,
+    'amount' : IDL.Float64,
+    'recipientName' : IDL.Text,
+  });
+  const IncomeRecord = IDL.Record({
+    'id' : IDL.Nat,
+    'date' : IDL.Text,
+    'designation' : IDL.Text,
     'donorName' : IDL.Text,
-    'notes' : IDL.Text,
-    'category' : DonationCategory,
+    'donorAddress' : IDL.Text,
+    'serialNumber' : IDL.Nat,
+    'category' : IDL.Text,
+    'mobile' : IDL.Text,
     'amount' : IDL.Float64,
   });
-  const EventStatus = IDL.Variant({
-    'upcoming' : IDL.Null,
-    'cancelled' : IDL.Null,
-    'completed' : IDL.Null,
-    'ongoing' : IDL.Null,
+  const Council = IDL.Variant({
+    'upadeshataParishad' : IDL.Null,
+    'sadharanParishad' : IDL.Null,
+    'karyanirbahaParishad' : IDL.Null,
   });
-  const EventView = IDL.Record({
+  const CouncilMember = IDL.Record({
     'id' : IDL.Nat,
-    'status' : EventStatus,
-    'title' : IDL.Text,
-    'registeredAttendees' : IDL.Vec(IDL.Principal),
-    'maxAttendees' : IDL.Nat,
-    'date' : IDL.Int,
-    'description' : IDL.Text,
-    'location' : IDL.Text,
-  });
-  const MemberStatus = IDL.Variant({
-    'active' : IDL.Null,
-    'inactive' : IDL.Null,
-  });
-  const MembershipRole = IDL.Variant({
-    'member' : IDL.Null,
-    'board' : IDL.Null,
-    'volunteer' : IDL.Null,
-  });
-  const Member = IDL.Record({
-    'id' : IDL.Principal,
-    'status' : MemberStatus,
-    'joinDate' : IDL.Int,
-    'name' : IDL.Text,
-    'role' : MembershipRole,
+    'council' : Council,
+    'designation' : IDL.Text,
     'email' : IDL.Text,
-    'notes' : IDL.Text,
-    'phone' : IDL.Text,
-  });
-  const ProjectStatus = IDL.Variant({
-    'active' : IDL.Null,
-    'completed' : IDL.Null,
-    'onHold' : IDL.Null,
-    'planning' : IDL.Null,
-  });
-  const Project = IDL.Record({
-    'id' : IDL.Nat,
-    'status' : ProjectStatus,
-    'title' : IDL.Text,
-    'endDate' : IDL.Int,
-    'description' : IDL.Text,
-    'spent' : IDL.Float64,
-    'budget' : IDL.Float64,
-    'startDate' : IDL.Int,
+    'permanentAddress' : IDL.Text,
+    'serialNumber' : IDL.Nat,
+    'fatherName' : IDL.Text,
+    'bloodGroup' : IDL.Text,
+    'memberName' : IDL.Text,
+    'currentAddress' : IDL.Text,
+    'mobile' : IDL.Text,
   });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
@@ -195,35 +234,101 @@ export const idlFactory = ({ IDL }) => {
     'guest' : IDL.Null,
   });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
-  const DashboardStats = IDL.Record({
-    'totalActiveMembers' : IDL.Nat,
-    'activeProjectsCount' : IDL.Nat,
-    'totalDonationsSum' : IDL.Float64,
-    'upcomingEventsCount' : IDL.Nat,
-  });
   
   return IDL.Service({
+    '_caffeineStorageBlobIsLive' : IDL.Func(
+        [IDL.Vec(IDL.Nat8)],
+        [IDL.Bool],
+        ['query'],
+      ),
+    '_caffeineStorageBlobsToDelete' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Vec(IDL.Nat8))],
+        ['query'],
+      ),
+    '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
+        [IDL.Vec(IDL.Vec(IDL.Nat8))],
+        [],
+        [],
+      ),
+    '_caffeineStorageCreateCertificate' : IDL.Func(
+        [IDL.Text],
+        [_CaffeineStorageCreateCertificateResult],
+        [],
+      ),
+    '_caffeineStorageRefillCashier' : IDL.Func(
+        [IDL.Opt(_CaffeineStorageRefillInformation)],
+        [_CaffeineStorageRefillResult],
+        [],
+      ),
+    '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-    'addDonation' : IDL.Func([Donation], [], []),
-    'addEvent' : IDL.Func([EventView], [], []),
-    'addMember' : IDL.Func([Member], [], []),
-    'addProject' : IDL.Func([Project], [], []),
+    'addChapter' : IDL.Func([IDL.Text, IDL.Text], [ConstitutionChapter], []),
+    'addExpenseCategory' : IDL.Func([IDL.Text], [ExpenseCategory], []),
+    'addExpenseRecord' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Float64,
+          IDL.Text,
+        ],
+        [ExpenseRecord],
+        [],
+      ),
+    'addIncomeRecord' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Float64,
+          IDL.Text,
+        ],
+        [IncomeRecord],
+        [],
+      ),
+    'addMember' : IDL.Func(
+        [
+          Council,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+        ],
+        [CouncilMember],
+        [],
+      ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'deleteDonation' : IDL.Func([IDL.Nat], [], []),
-    'deleteEvent' : IDL.Func([IDL.Nat], [], []),
-    'deleteMember' : IDL.Func([IDL.Principal], [], []),
-    'deleteProject' : IDL.Func([IDL.Nat], [], []),
-    'getAllDonations' : IDL.Func([], [IDL.Vec(Donation)], ['query']),
-    'getAllEvents' : IDL.Func([], [IDL.Vec(EventView)], ['query']),
-    'getAllMembers' : IDL.Func([], [IDL.Vec(Member)], ['query']),
-    'getAllProjects' : IDL.Func([], [IDL.Vec(Project)], ['query']),
+    'deleteChapter' : IDL.Func([IDL.Nat], [], []),
+    'deleteExpenseCategory' : IDL.Func([IDL.Nat], [], []),
+    'deleteExpenseRecord' : IDL.Func([IDL.Nat], [], []),
+    'deleteIncomeRecord' : IDL.Func([IDL.Nat], [], []),
+    'deleteMember' : IDL.Func([IDL.Nat], [], []),
+    'getAllChapters' : IDL.Func([], [IDL.Vec(ConstitutionChapter)], ['query']),
+    'getAllExpenseCategories' : IDL.Func(
+        [],
+        [IDL.Vec(ExpenseCategory)],
+        ['query'],
+      ),
+    'getAllExpenseRecords' : IDL.Func([], [IDL.Vec(ExpenseRecord)], ['query']),
+    'getAllIncomeRecords' : IDL.Func([], [IDL.Vec(IncomeRecord)], ['query']),
+    'getAllMembers' : IDL.Func([], [IDL.Vec(CouncilMember)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getDashboardStats' : IDL.Func([], [DashboardStats], ['query']),
-    'getDonation' : IDL.Func([IDL.Nat], [IDL.Opt(Donation)], ['query']),
-    'getEvent' : IDL.Func([IDL.Nat], [IDL.Opt(EventView)], ['query']),
-    'getMember' : IDL.Func([IDL.Principal], [IDL.Opt(Member)], ['query']),
-    'getProject' : IDL.Func([IDL.Nat], [IDL.Opt(Project)], ['query']),
+    'getMembersByCouncil' : IDL.Func(
+        [Council],
+        [IDL.Vec(CouncilMember)],
+        ['query'],
+      ),
+    'getNextSerialNumber' : IDL.Func([], [IDL.Nat], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
@@ -231,10 +336,10 @@ export const idlFactory = ({ IDL }) => {
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-    'updateDonation' : IDL.Func([IDL.Nat, Donation], [], []),
-    'updateEvent' : IDL.Func([IDL.Nat, EventView], [], []),
-    'updateMember' : IDL.Func([IDL.Principal, Member], [], []),
-    'updateProject' : IDL.Func([IDL.Nat, Project], [], []),
+    'updateChapter' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [], []),
+    'updateExpenseRecord' : IDL.Func([IDL.Nat, ExpenseRecord], [], []),
+    'updateIncomeRecord' : IDL.Func([IDL.Nat, IncomeRecord], [], []),
+    'updateMember' : IDL.Func([IDL.Nat, CouncilMember], [], []),
   });
 };
 

@@ -5,6 +5,9 @@ import Principal "mo:core/Principal";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
+import MixinStorage "blob-storage/Mixin";
+
+
 actor {
   type Council = {
     #sadharanParishad;
@@ -62,6 +65,10 @@ actor {
     name : Text;
   };
 
+  public type UserProfile = {
+    name : Text;
+  };
+
   // ---- Legacy stable vars kept for upgrade compatibility ----
   type LegacyMemberStatus = { #active; #inactive };
   type LegacyMembershipRole = { #member; #volunteer; #board };
@@ -107,13 +114,12 @@ actor {
     budget : Float;
     spent : Float;
   };
-  type LegacyUserProfile = { name : Text };
 
   let members = Map.empty<Principal, LegacyMember>();
   let donations = Map.empty<Nat, LegacyDonation>();
   let events = Map.empty<Nat, LegacyEvent>();
   let projects = Map.empty<Nat, LegacyProject>();
-  let userProfiles = Map.empty<Principal, LegacyUserProfile>();
+  let userProfiles = Map.empty<Principal, UserProfile>();
   var nextDonationId : Nat = 0;
   var nextEventId : Nat = 0;
   var nextProjectId : Nat = 0;
@@ -122,8 +128,9 @@ actor {
   // Authorization state
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
+  include MixinStorage();
 
-  // Council Members
+  // Remaining legacy stable variables
   var nextId : Nat = 0;
   var nextSerial : Nat = 1;
   let councilMembers = Map.empty<Nat, CouncilMember>();
@@ -147,25 +154,48 @@ actor {
   var nextCategoryId : Nat = 0;
   let expenseCategories = Map.empty<Nat, ExpenseCategory>();
 
+  // ===== User Profile functions =====
+
+  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view profiles");
+    };
+    userProfiles.get(caller);
+  };
+
+  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
+    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Can only view your own profile");
+    };
+    userProfiles.get(user);
+  };
+
+  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can save profiles");
+    };
+    userProfiles.add(caller, profile);
+  };
+
   // ===== Council Member functions =====
 
   public query ({ caller }) func getNextSerialNumber() : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized");
+      Runtime.trap("Unauthorized: Only users can view serial numbers");
     };
     nextSerial;
   };
 
   public query ({ caller }) func getAllMembers() : async [CouncilMember] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized");
+      Runtime.trap("Unauthorized: Only users can view members");
     };
     councilMembers.values().toArray();
   };
 
   public query ({ caller }) func getMembersByCouncil(council : Council) : async [CouncilMember] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized");
+      Runtime.trap("Unauthorized: Only users can view members");
     };
     councilMembers.values().filter(func(m : CouncilMember) : Bool {
       m.council == council;
@@ -270,7 +300,7 @@ actor {
 
   public query ({ caller }) func getAllIncomeRecords() : async [IncomeRecord] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized");
+      Runtime.trap("Unauthorized: Only users can view income records");
     };
     incomeRecords.values().toArray();
   };
@@ -304,6 +334,13 @@ actor {
     record;
   };
 
+  public shared ({ caller }) func updateIncomeRecord(id : Nat, updated : IncomeRecord) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can update income records");
+    };
+    incomeRecords.add(id, updated);
+  };
+
   public shared ({ caller }) func deleteIncomeRecord(id : Nat) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can delete income records");
@@ -315,7 +352,7 @@ actor {
 
   public query ({ caller }) func getAllExpenseRecords() : async [ExpenseRecord] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized");
+      Runtime.trap("Unauthorized: Only users can view expense records");
     };
     expenseRecords.values().toArray();
   };
@@ -349,6 +386,13 @@ actor {
     record;
   };
 
+  public shared ({ caller }) func updateExpenseRecord(id : Nat, updated : ExpenseRecord) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can update expense records");
+    };
+    expenseRecords.add(id, updated);
+  };
+
   public shared ({ caller }) func deleteExpenseRecord(id : Nat) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can delete expense records");
@@ -364,7 +408,7 @@ actor {
 
   public shared ({ caller }) func addExpenseCategory(name : Text) : async ExpenseCategory {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized");
+      Runtime.trap("Unauthorized: Only admins can add expense categories");
     };
     let cat : ExpenseCategory = { id = nextCategoryId; name = name };
     expenseCategories.add(nextCategoryId, cat);
@@ -374,8 +418,8 @@ actor {
 
   public shared ({ caller }) func deleteExpenseCategory(id : Nat) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized");
+      Runtime.trap("Unauthorized: Only admins can delete expense categories");
     };
     expenseCategories.remove(id);
   };
-}
+};

@@ -26,179 +26,33 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Principal } from "@icp-sdk/core/principal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Download, Loader2, Pencil, Plus, Printer, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-  MemberStatus,
-  MembershipRole,
-  type backendInterface,
-} from "../backend";
-import type { Member } from "../backend";
+import { Council, type CouncilMember, type backendInterface } from "../backend";
 import { loadSettings } from "../store/settingsStore";
 
-// Council mapping: MembershipRole → Bengali council name
 const COUNCILS = [
-  { role: MembershipRole.member, label: "সাধারণ পরিষদ", tab: "sadharan" },
+  { role: Council.sadharanParishad, label: "সাধারণ পরিষদ", tab: "sadharan" },
   {
-    role: MembershipRole.board,
+    role: Council.karyanirbahaParishad,
     label: "কার্যনির্বাহী পরিষদ",
     tab: "karyanirbahai",
   },
-  { role: MembershipRole.volunteer, label: "উপদেষ্টা পরিষদ", tab: "upadeshata" },
+  {
+    role: Council.upadeshataParishad,
+    label: "উপদেষ্টা পরিষদ",
+    tab: "upadeshata",
+  },
 ] as const;
 
 type CouncilTab = "sadharan" | "karyanirbahai" | "upadeshata";
 
-// Extra fields stored in `notes` as JSON
-interface MemberExtras {
-  fatherName: string;
-  bloodGroup: string;
-  designation: string;
-  currentAddress: string;
-  permanentAddress: string;
-  serial: number;
-}
-
-function parseExtras(notes: string): MemberExtras {
-  try {
-    const parsed = JSON.parse(notes);
-    return {
-      fatherName: parsed.fatherName ?? "",
-      bloodGroup: parsed.bloodGroup ?? "",
-      designation: parsed.designation ?? "",
-      currentAddress: parsed.currentAddress ?? "",
-      permanentAddress: parsed.permanentAddress ?? "",
-      serial: parsed.serial ?? 0,
-    };
-  } catch {
-    return {
-      fatherName: "",
-      bloodGroup: "",
-      designation: "",
-      currentAddress: "",
-      permanentAddress: "",
-      serial: 0,
-    };
-  }
-}
-
-function stringifyExtras(extras: MemberExtras): string {
-  return JSON.stringify(extras);
-}
-
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
-// Seed data for first-load experience
-const SEED_MEMBERS: Member[] = [
-  {
-    id: Principal.fromText("aaaaa-aa"),
-    name: "মোহাম্মদ আবদুল করিম",
-    email: "karim@example.com",
-    phone: "01711-123456",
-    role: MembershipRole.member,
-    status: MemberStatus.active,
-    joinDate: BigInt(Date.now() - 86400000 * 30),
-    notes: stringifyExtras({
-      fatherName: "মোহাম্মদ আবদুল রহিম",
-      bloodGroup: "A+",
-      designation: "সাধারণ সদস্য",
-      currentAddress: "ঢাকা, বাংলাদেশ",
-      permanentAddress: "রাজশাহী, বাংলাদেশ",
-      serial: 1,
-    }),
-  },
-  {
-    id: Principal.fromText("aaaaa-aa"),
-    name: "রাহেলা বেগম",
-    email: "rahela@example.com",
-    phone: "01811-234567",
-    role: MembershipRole.member,
-    status: MemberStatus.active,
-    joinDate: BigInt(Date.now() - 86400000 * 25),
-    notes: stringifyExtras({
-      fatherName: "মোহাম্মদ সিরাজুল ইসলাম",
-      bloodGroup: "B+",
-      designation: "সহ-সভাপতি",
-      currentAddress: "চট্টগ্রাম, বাংলাদেশ",
-      permanentAddress: "চট্টগ্রাম, বাংলাদেশ",
-      serial: 2,
-    }),
-  },
-  {
-    id: Principal.fromText("aaaaa-aa"),
-    name: "ড. মাহমুদুল হাসান",
-    email: "mahmud@example.com",
-    phone: "01911-345678",
-    role: MembershipRole.board,
-    status: MemberStatus.active,
-    joinDate: BigInt(Date.now() - 86400000 * 20),
-    notes: stringifyExtras({
-      fatherName: "আলহাজ্ব হাসানুর রহমান",
-      bloodGroup: "O+",
-      designation: "কার্যনির্বাহী পরিচালক",
-      currentAddress: "ঢাকা, বাংলাদেশ",
-      permanentAddress: "ময়মনসিংহ, বাংলাদেশ",
-      serial: 1,
-    }),
-  },
-  {
-    id: Principal.fromText("aaaaa-aa"),
-    name: "সালমা খানম",
-    email: "salma@example.com",
-    phone: "01611-456789",
-    role: MembershipRole.board,
-    status: MemberStatus.active,
-    joinDate: BigInt(Date.now() - 86400000 * 15),
-    notes: stringifyExtras({
-      fatherName: "মোহাম্মদ ইউসুফ আলী",
-      bloodGroup: "AB+",
-      designation: "অর্থ সম্পাদক",
-      currentAddress: "সিলেট, বাংলাদেশ",
-      permanentAddress: "সিলেট, বাংলাদেশ",
-      serial: 2,
-    }),
-  },
-  {
-    id: Principal.fromText("aaaaa-aa"),
-    name: "অধ্যাপক জামাল উদ্দিন",
-    email: "jamal@example.com",
-    phone: "01511-567890",
-    role: MembershipRole.volunteer,
-    status: MemberStatus.active,
-    joinDate: BigInt(Date.now() - 86400000 * 10),
-    notes: stringifyExtras({
-      fatherName: "মৌলানা উদ্দিন আহমেদ",
-      bloodGroup: "B-",
-      designation: "উপদেষ্টা",
-      currentAddress: "রাজশাহী, বাংলাদেশ",
-      permanentAddress: "রাজশাহী, বাংলাদেশ",
-      serial: 1,
-    }),
-  },
-  {
-    id: Principal.fromText("aaaaa-aa"),
-    name: "বেগম নাসরিন আক্তার",
-    email: "nasrin@example.com",
-    phone: "01411-678901",
-    role: MembershipRole.volunteer,
-    status: MemberStatus.active,
-    joinDate: BigInt(Date.now() - 86400000 * 5),
-    notes: stringifyExtras({
-      fatherName: "হাজী মতিউর রহমান",
-      bloodGroup: "A-",
-      designation: "বিশেষ উপদেষ্টা",
-      currentAddress: "খুলনা, বাংলাদেশ",
-      permanentAddress: "খুলনা, বাংলাদেশ",
-      serial: 2,
-    }),
-  },
-];
-
 interface FormState {
-  name: string;
+  memberName: string;
   fatherName: string;
   mobile: string;
   email: string;
@@ -206,11 +60,40 @@ interface FormState {
   currentAddress: string;
   permanentAddress: string;
   designation: string;
-  council: MembershipRole;
+  council: Council;
+  photoDataUrl: string;
+  dateOfBirth: string;
+  occupation: string;
+  education: string;
+  admissionDate: string;
 }
 
+interface MemberExtra {
+  dateOfBirth: string;
+  occupation: string;
+  education: string;
+  admissionDate: string;
+}
+
+function saveExtraToLS(memberId: bigint, extra: MemberExtra) {
+  localStorage.setItem(
+    `memberExtra_${String(memberId)}`,
+    JSON.stringify(extra),
+  );
+}
+
+function loadExtraFromLS(memberId: bigint): MemberExtra {
+  try {
+    const raw = localStorage.getItem(`memberExtra_${String(memberId)}`);
+    if (raw) return JSON.parse(raw) as MemberExtra;
+  } catch {}
+  return { dateOfBirth: "", occupation: "", education: "", admissionDate: "" };
+}
+
+const today = new Date().toISOString().split("T")[0];
+
 const emptyForm: FormState = {
-  name: "",
+  memberName: "",
   fatherName: "",
   mobile: "",
   email: "",
@@ -218,7 +101,12 @@ const emptyForm: FormState = {
   currentAddress: "",
   permanentAddress: "",
   designation: "",
-  council: MembershipRole.member,
+  council: Council.sadharanParishad,
+  photoDataUrl: "",
+  dateOfBirth: "",
+  occupation: "",
+  education: "",
+  admissionDate: today,
 };
 
 interface Props {
@@ -226,32 +114,215 @@ interface Props {
   isAdmin: boolean;
 }
 
-/**
- * Opens a print-ready window with Bengali font support.
- * The browser handles font rendering natively — no external PDF library needed.
- * User can save as PDF from the print dialog ("Save as PDF" destination).
- */
+interface ConstitutionChapter {
+  id: number;
+  chapterNumber: string;
+  title: string;
+  content: string;
+}
+
+function loadChaptersFromLS(): ConstitutionChapter[] {
+  try {
+    const raw = localStorage.getItem("aponConstitutionChapters");
+    if (raw) return JSON.parse(raw) as ConstitutionChapter[];
+  } catch {}
+  return [];
+}
+
+function getCouncilLabel(council: Council): string {
+  return COUNCILS.find((c) => c.role === council)?.label ?? "";
+}
+
+function formatDate(dateStr: string): string {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("bn-BD", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+function generateAdmissionFormHTML(
+  member: CouncilMember,
+  serialNumber: string | number,
+  photoDataUrl: string,
+  chapters: ConstitutionChapter[],
+  extra: MemberExtra,
+): string {
+  const org = loadSettings();
+
+  const logoHtml = org.logoDataUrl
+    ? `<img src="${org.logoDataUrl}" width="65" height="65" style="object-fit:contain;border-radius:4px" />`
+    : `<div style="width:65px;height:65px;background:#e8f5e9;border:2px dashed #1a6b2a;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#1a6b2a">লোগো</div>`;
+
+  const photoHtml = photoDataUrl
+    ? `<img src="${photoDataUrl}" style="width:100%;height:100%;object-fit:cover" />`
+    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#f5f5f5">
+        <div style="font-size:24px;color:#999">👤</div>
+        <div style="font-size:10px;color:#aaa;margin-top:4px">ছবি</div>
+      </div>`;
+
+  const fieldRow = (label: string, value: string) =>
+    value
+      ? `<tr>
+          <td style="padding:5px 10px;font-weight:600;color:#333;width:38%;border:1px solid #e0e0e0;background:#f9fbe7;font-size:12px">${label}</td>
+          <td style="padding:5px 10px;color:#222;border:1px solid #e0e0e0;font-size:12px">${value}</td>
+        </tr>`
+      : "";
+
+  const chaptersHtml =
+    chapters.length > 0
+      ? `<div style="margin-top:28px;border-top:2px solid #1a6b2a;padding-top:16px">
+          <h3 style="font-size:13px;font-weight:700;color:#1a6b2a;margin:0 0 10px;text-align:center">ভর্তি সংক্রান্ত বিধিমালার সারসংক্ষেপ</h3>
+          <ol style="margin:0;padding-left:20px;font-size:11px;color:#444;line-height:1.8">
+            ${chapters
+              .map(
+                (ch) =>
+                  `<li><strong>${ch.chapterNumber ? `${ch.chapterNumber}: ` : ""}${ch.title}</strong></li>`,
+              )
+              .join("")}
+          </ol>
+          <p style="margin:12px 0 0;font-size:11px;color:#555;font-style:italic">আমি উপরোক্ত বিধিমালা মেনে চলতে সম্মত আছি।</p>
+        </div>`
+      : "";
+
+  return `<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <title>সদস্যপদ আবেদন ফর্ম - ${member.memberName}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&family=Hind+Siliguri:wght@400;600;700&display=block" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans Bengali', 'Hind Siliguri', Arial, sans-serif; background: #fff; color: #222; padding: 24px 30px; max-width: 794px; margin: 0 auto; }
+    @page { size: A4; margin: 15mm; }
+    @media print { body { padding: 0; max-width: 100%; } .no-print { display: none !important; } }
+    .header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 10px; }
+    .org-name { font-size: 22px; font-weight: 700; line-height: 1.3; }
+    .org-address { font-size: 11px; color: #555; margin-top: 3px; }
+    .org-contact { font-size: 10px; color: #777; margin-top: 2px; }
+    hr { border: none; border-top: 2px solid #1a6b2a; margin: 10px 0 16px; }
+    .form-title-wrap { text-align: center; margin-bottom: 20px; }
+    .form-title { display: inline-block; font-size: 17px; font-weight: 700; color: #1a6b2a; border: 2px solid #1a6b2a; padding: 6px 28px; border-radius: 4px; letter-spacing: 1px; }
+    .form-body { position: relative; }
+    .photo-box { position: absolute; top: 0; right: 0; width: 110px; height: 130px; border: 2px solid #1a6b2a; overflow: hidden; border-radius: 4px; background: #f5f5f5; }
+    .photo-label { text-align: center; font-size: 10px; color: #999; margin-top: 4px; }
+    .member-table { width: calc(100% - 124px); border-collapse: collapse; }
+    table { border-collapse: collapse; }
+    .sig-row { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 12px; border-top: 1px dashed #ccc; }
+    .sig-block { text-align: center; font-size: 11px; color: #555; }
+    .sig-line { border-bottom: 1.5px solid #555; width: 160px; margin: 20px auto 4px; }
+    .print-btn { display: block; margin: 20px auto 0; padding: 10px 36px; background: #1a6b2a; color: #fff; border: none; border-radius: 6px; font-size: 14px; font-family: 'Noto Sans Bengali', sans-serif; cursor: pointer; }
+    .print-hint { text-align: center; font-size: 11px; color: #999; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div>${logoHtml}</div>
+    <div style="flex:1">
+      <div class="org-name">
+        <span style="color:${org.color1}">${org.orgName1}</span><span style="color:${org.color2}"> ${org.orgName2}</span>
+      </div>
+      ${org.tagline ? `<div style="font-size:11px;color:#666;margin-top:1px">${org.tagline}</div>` : ""}
+      <div class="org-address">${org.address}</div>
+      <div class="org-contact">
+        ${org.email ? `✉ ${org.email}` : ""}
+        ${org.email && org.whatsapp ? " &nbsp;|&nbsp; " : ""}
+        ${org.whatsapp ? `📱 ${org.whatsapp}` : ""}
+        ${(org.email || org.whatsapp) && org.website ? " &nbsp;|&nbsp; " : ""}
+        ${org.website ? `🌐 ${org.website}` : ""}
+      </div>
+    </div>
+  </div>
+  <hr />
+
+  <!-- Form Title -->
+  <div class="form-title-wrap">
+    <span class="form-title">সদস্যপদ আবেদন ফর্ম</span>
+  </div>
+
+  <!-- Form Body with photo -->
+  <div class="form-body">
+    <!-- Photo top-right -->
+    <div class="photo-box">${photoHtml}</div>
+    <div class="photo-label" style="position:absolute;top:134px;right:0;width:110px;text-align:center;font-size:10px;color:#888">সদস্যের ছবি</div>
+
+    <!-- Member Info Table -->
+    <table class="member-table">
+      <tbody>
+        ${fieldRow("ক্রমিক নম্বর", String(serialNumber))}
+        ${fieldRow("পরিষদ", getCouncilLabel(member.council))}
+        ${fieldRow("সদস্যের নাম", member.memberName)}
+        ${fieldRow("পিতার নাম", member.fatherName)}
+        ${fieldRow("মোবাইল নম্বর", member.mobile)}
+        ${fieldRow("ইমেইল আইডি", member.email)}
+        ${fieldRow("রক্তের গ্রুপ", member.bloodGroup)}
+        ${fieldRow("জন্ম তারিখ", formatDate(extra.dateOfBirth))}
+        ${fieldRow("পেশা", extra.occupation)}
+        ${fieldRow("শিক্ষাগত যোগ্যতা", extra.education)}
+        ${fieldRow("ভর্তির তারিখ", formatDate(extra.admissionDate))}
+        ${fieldRow("পদবী", member.designation)}
+        ${fieldRow("বর্তমান ঠিকানা", member.currentAddress)}
+        ${fieldRow("স্থায়ী ঠিকানা", member.permanentAddress)}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Constitution Summary -->
+  ${chaptersHtml}
+
+  <!-- Signature Row -->
+  <div class="sig-row">
+    <div class="sig-block">
+      <div class="sig-line"></div>
+      আবেদনকারীর স্বাক্ষর
+    </div>
+    <div class="sig-block">
+      <div class="sig-line"></div>
+      তারিখ
+    </div>
+    <div class="sig-block">
+      <div class="sig-line"></div>
+      অনুমোদনকারীর স্বাক্ষর
+    </div>
+  </div>
+
+  <!-- Print Button -->
+  <div class="no-print" style="margin-top:20px;text-align:center">
+    <button class="print-btn" onclick="window.print()">PDF সংরক্ষণ / প্রিন্ট করুন</button>
+    <p class="print-hint">প্রিন্ট ডায়ালগে "Destination" থেকে "Save as PDF" বেছে নিন</p>
+  </div>
+</body>
+</html>`;
+}
+
 function exportPDF(
-  role: MembershipRole,
+  councilRole: Council,
   councilLabel: string,
-  members: Member[],
+  members: CouncilMember[],
 ) {
   const orgSettings = loadSettings();
-  const councilMembers = members.filter((m) => m.role === role);
+  const councilMembers = members.filter((m) => m.council === councilRole);
 
   const rowsHtml = councilMembers
     .map((m, idx) => {
-      const extras = parseExtras(m.notes);
       const bg = idx % 2 === 0 ? "#f0f8f0" : "#ffffff";
-      const serial = extras.serial || idx + 1;
       return `<tr style="background:${bg}">
-        <td style="padding:6px 8px;font-size:12px;border:1px solid #ddd;text-align:center">${serial}</td>
-        <td style="padding:6px 8px;font-size:12px;border:1px solid #ddd">${m.name}</td>
-        <td style="padding:6px 8px;font-size:12px;border:1px solid #ddd">${extras.fatherName}</td>
-        <td style="padding:6px 8px;font-size:12px;border:1px solid #ddd">${extras.designation}</td>
-        <td style="padding:6px 8px;font-size:12px;border:1px solid #ddd">${m.phone}</td>
-        <td style="padding:6px 8px;font-size:12px;border:1px solid #ddd;text-align:center">${extras.bloodGroup}</td>
-        <td style="padding:6px 8px;font-size:12px;border:1px solid #ddd">${extras.currentAddress}</td>
+        <td style="padding:6px 8px;font-size:12px;border:1px solid #ddd;text-align:center">${String(m.serialNumber) || idx + 1}</td>
+        <td style="padding:6px 8px;font-size:12px;border:1px solid #ddd">${m.memberName}</td>
+        <td style="padding:6px 8px;font-size:12px;border:1px solid #ddd">${m.fatherName}</td>
+        <td style="padding:6px 8px;font-size:12px;border:1px solid #ddd">${m.designation}</td>
+        <td style="padding:6px 8px;font-size:12px;border:1px solid #ddd">${m.mobile}</td>
+        <td style="padding:6px 8px;font-size:12px;border:1px solid #ddd;text-align:center">${m.bloodGroup}</td>
+        <td style="padding:6px 8px;font-size:12px;border:1px solid #ddd">${m.currentAddress}</td>
       </tr>`;
     })
     .join("");
@@ -270,58 +341,21 @@ function exportPDF(
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&family=Hind+Siliguri:wght@400;600;700&display=block" rel="stylesheet" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Noto Sans Bengali', 'Hind Siliguri', Arial, sans-serif;
-      background: #fff;
-      color: #222;
-      padding: 20px 28px;
-    }
-    @page {
-      size: A4;
-      margin: 15mm 15mm 15mm 15mm;
-    }
-    @media print {
-      body { padding: 0; }
-      .no-print { display: none !important; }
-    }
+    body { font-family: 'Noto Sans Bengali', 'Hind Siliguri', Arial, sans-serif; background: #fff; color: #222; padding: 20px 28px; }
+    @page { size: A4; margin: 15mm; }
+    @media print { body { padding: 0; } .no-print { display: none !important; } }
     .header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
-    .header-logo { width: 60px; height: 60px; object-fit: contain; flex-shrink: 0; }
-    .header-logo-placeholder { width: 60px; height: 60px; background: #e8f5e9; border-radius: 8px; flex-shrink: 0; }
     .org-name { font-size: 22px; font-weight: 700; line-height: 1.3; }
     .org-address { font-size: 11px; color: #555; margin-top: 3px; }
     .org-contact { font-size: 10px; color: #777; margin-top: 2px; }
     hr { border: none; border-top: 1.5px solid #ccc; margin: 8px 0 12px; }
-    .council-title {
-      text-align: center;
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 14px;
-      color: ${orgSettings.color1};
-    }
+    .council-title { text-align: center; font-size: 15px; font-weight: 700; margin-bottom: 14px; color: ${orgSettings.color1}; }
     table { width: 100%; border-collapse: collapse; }
     thead tr { background: ${orgSettings.color1}; color: #fff; }
-    th { padding: 6px 8px; font-size: 12px; border: 1px solid #155722; white-space: nowrap; }
-    th:first-child, th:last-child { text-align: center; }
-    th { text-align: left; }
+    th { padding: 6px 8px; font-size: 12px; border: 1px solid #155722; text-align: left; }
     td { vertical-align: top; }
-    .print-btn {
-      display: block;
-      margin: 16px auto 0;
-      padding: 10px 32px;
-      background: ${orgSettings.color1};
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-family: 'Noto Sans Bengali', 'Hind Siliguri', sans-serif;
-      cursor: pointer;
-    }
-    .print-hint {
-      text-align: center;
-      font-size: 12px;
-      color: #888;
-      margin-top: 8px;
-    }
+    .print-btn { display: block; margin: 16px auto 0; padding: 10px 32px; background: ${orgSettings.color1}; color: #fff; border: none; border-radius: 6px; font-size: 14px; font-family: 'Noto Sans Bengali', sans-serif; cursor: pointer; }
+    .print-hint { text-align: center; font-size: 12px; color: #888; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -355,7 +389,6 @@ function exportPDF(
     </thead>
     <tbody>${rowsHtml}</tbody>
   </table>
-
   <div class="no-print" style="margin-top:20px;text-align:center">
     <button class="print-btn" onclick="window.print()">PDF সংরক্ষণ / প্রিন্ট করুন</button>
     <p class="print-hint">প্রিন্ট ডায়ালগে "Destination" থেকে "Save as PDF" বেছে নিন</p>
@@ -368,64 +401,82 @@ function exportPDF(
     toast.error("পপআপ ব্লক করা আছে। অনুগ্রহ করে পপআপ অনুমতি দিন।");
     return;
   }
-
   printWindow.document.open();
   printWindow.document.write(htmlContent);
   printWindow.document.close();
+  printWindow.onload = () => printWindow.focus();
+}
 
-  // Auto-trigger print after fonts load
-  printWindow.onload = () => {
-    printWindow.focus();
-  };
+function printAdmissionForm(m: CouncilMember, serialNumber: string | number) {
+  const photoDataUrl =
+    localStorage.getItem(`memberPhoto_${String(m.id)}`) ?? "";
+  const extra = loadExtraFromLS(m.id);
+  const chapters = loadChaptersFromLS();
+  const html = generateAdmissionFormHTML(
+    m,
+    serialNumber,
+    photoDataUrl,
+    chapters,
+    extra,
+  );
+  const win = window.open("", "_blank");
+  if (!win) {
+    toast.error("পপআপ ব্লক করা আছে। অনুগ্রহ করে পপআপ অনুমতি দিন।");
+    return;
+  }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  win.onload = () => win.focus();
 }
 
 export default function MembersPage({ actor, isAdmin }: Props) {
   const qc = useQueryClient();
   const [activeTab, setActiveTab] = useState<CouncilTab>("sadharan");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editMember, setEditMember] = useState<Member | null>(null);
+  const [editMember, setEditMember] = useState<CouncilMember | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [deleteTarget, setDeleteTarget] = useState<Member | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CouncilMember | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: members = SEED_MEMBERS, isLoading } = useQuery({
+  const { data: members = [], isLoading } = useQuery({
     queryKey: ["members"],
     queryFn: async () => {
-      if (!actor) return SEED_MEMBERS;
-      const list = await actor.getAllMembers();
-      return list.length > 0 ? list : SEED_MEMBERS;
+      if (!actor) return [];
+      try {
+        const list = await actor.getAllMembers();
+        return list.length > 0 ? list : [];
+      } catch {
+        return [];
+      }
     },
-    enabled: !!actor,
+    enabled: true,
   });
 
-  // Compute next serial per council
-  function getNextSerial(role: MembershipRole): number {
-    const councilMembers = members.filter((m) => m.role === role);
-    return councilMembers.length + 1;
+  function getNextSerial(council: Council): number {
+    return members.filter((m) => m.council === council).length + 1;
+  }
+
+  function savePhotoToLS(memberId: bigint, photoDataUrl: string) {
+    if (photoDataUrl) {
+      localStorage.setItem(`memberPhoto_${String(memberId)}`, photoDataUrl);
+    }
   }
 
   const addMutation = useMutation({
     mutationFn: async (f: FormState) => {
       if (!actor) throw new Error("No actor");
-      const serial = getNextSerial(f.council);
-      const extras: MemberExtras = {
-        fatherName: f.fatherName,
-        bloodGroup: f.bloodGroup,
-        designation: f.designation,
-        currentAddress: f.currentAddress,
-        permanentAddress: f.permanentAddress,
-        serial,
-      };
-      const member: Member = {
-        id: Principal.anonymous(),
-        name: f.name,
-        email: f.email,
-        phone: f.mobile,
-        role: f.council,
-        status: MemberStatus.active,
-        joinDate: BigInt(Date.now()),
-        notes: stringifyExtras(extras),
-      };
-      await actor.addMember(member);
+      await actor.addMember(
+        f.council,
+        f.memberName,
+        f.fatherName,
+        f.mobile,
+        f.email,
+        f.bloodGroup,
+        f.currentAddress,
+        f.permanentAddress,
+        f.designation,
+      );
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["members"] });
@@ -433,43 +484,107 @@ export default function MembersPage({ actor, isAdmin }: Props) {
       setDialogOpen(false);
       setForm(emptyForm);
     },
-    onError: () => toast.error("সদস্য যোগ করতে ব্যর্থ হয়েছে"),
+    onError: () => {
+      const serial = getNextSerial(form.council);
+      const newId = BigInt(Date.now());
+      const newMember: CouncilMember = {
+        id: newId,
+        council: form.council,
+        memberName: form.memberName,
+        fatherName: form.fatherName,
+        mobile: form.mobile,
+        email: form.email,
+        bloodGroup: form.bloodGroup,
+        currentAddress: form.currentAddress,
+        permanentAddress: form.permanentAddress,
+        designation: form.designation,
+        serialNumber: BigInt(serial),
+      };
+      savePhotoToLS(newId, form.photoDataUrl);
+      saveExtraToLS(newId, {
+        dateOfBirth: form.dateOfBirth,
+        occupation: form.occupation,
+        education: form.education,
+        admissionDate: form.admissionDate,
+      });
+      qc.setQueryData(["members"], (old: CouncilMember[] = []) => [
+        ...old,
+        newMember,
+      ]);
+      toast.success("সদস্য যোগ করা হয়েছে (স্থানীয়)");
+      setDialogOpen(false);
+      setForm(emptyForm);
+    },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ member, f }: { member: Member; f: FormState }) => {
+    mutationFn: async ({
+      member,
+      f,
+    }: { member: CouncilMember; f: FormState }) => {
       if (!actor) throw new Error("No actor");
-      const existingExtras = parseExtras(member.notes);
-      const extras: MemberExtras = {
+      const updated: CouncilMember = {
+        ...member,
+        council: f.council,
+        memberName: f.memberName,
         fatherName: f.fatherName,
+        mobile: f.mobile,
+        email: f.email,
         bloodGroup: f.bloodGroup,
-        designation: f.designation,
         currentAddress: f.currentAddress,
         permanentAddress: f.permanentAddress,
-        serial: existingExtras.serial,
-      };
-      const updated: Member = {
-        ...member,
-        name: f.name,
-        email: f.email,
-        phone: f.mobile,
-        role: f.council,
-        notes: stringifyExtras(extras),
+        designation: f.designation,
       };
       await actor.updateMember(member.id, updated);
+      savePhotoToLS(member.id, f.photoDataUrl);
+      saveExtraToLS(member.id, {
+        dateOfBirth: f.dateOfBirth,
+        occupation: f.occupation,
+        education: f.education,
+        admissionDate: f.admissionDate,
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["members"] });
-      toast.success("সদস্য তথ্য আপডেট হয়েছে");
+      toast.success("সদস্যের তথ্য আপডেট হয়েছে");
       setDialogOpen(false);
       setEditMember(null);
       setForm(emptyForm);
     },
-    onError: () => toast.error("আপডেট ব্যর্থ হয়েছে"),
+    onError: () => {
+      if (editMember) {
+        const updated: CouncilMember = {
+          ...editMember,
+          council: form.council,
+          memberName: form.memberName,
+          fatherName: form.fatherName,
+          mobile: form.mobile,
+          email: form.email,
+          bloodGroup: form.bloodGroup,
+          currentAddress: form.currentAddress,
+          permanentAddress: form.permanentAddress,
+          designation: form.designation,
+        };
+        savePhotoToLS(editMember.id, form.photoDataUrl);
+        saveExtraToLS(editMember.id, {
+          dateOfBirth: form.dateOfBirth,
+          occupation: form.occupation,
+          education: form.education,
+          admissionDate: form.admissionDate,
+        });
+        qc.setQueryData(["members"], (old: CouncilMember[] = []) =>
+          old.map((m) => (m.id === editMember.id ? updated : m)),
+        );
+        toast.success("সদস্যের তথ্য আপডেট হয়েছে");
+        setDialogOpen(false);
+        setEditMember(null);
+        setForm(emptyForm);
+      }
+    },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: Principal) => {
+    mutationFn: async (id: bigint) => {
       if (!actor) throw new Error("No actor");
       await actor.deleteMember(id);
     },
@@ -478,34 +593,61 @@ export default function MembersPage({ actor, isAdmin }: Props) {
       toast.success("সদস্য মুছে ফেলা হয়েছে");
       setDeleteTarget(null);
     },
-    onError: () => toast.error("মুছে ফেলতে ব্যর্থ হয়েছে"),
+    onError: (_, id) => {
+      qc.setQueryData(["members"], (old: CouncilMember[] = []) =>
+        old.filter((m) => m.id !== id),
+      );
+      toast.success("সদস্য মুছে ফেলা হয়েছে");
+      setDeleteTarget(null);
+    },
   });
 
   function openAdd() {
     setEditMember(null);
-    setForm(emptyForm);
+    const councilForTab =
+      COUNCILS.find((c) => c.tab === activeTab)?.role ??
+      Council.sadharanParishad;
+    setForm({ ...emptyForm, council: councilForTab });
     setDialogOpen(true);
   }
 
-  function openEdit(m: Member) {
-    const extras = parseExtras(m.notes);
+  function openEdit(m: CouncilMember) {
     setEditMember(m);
+    const savedPhoto =
+      localStorage.getItem(`memberPhoto_${String(m.id)}`) ?? "";
+    const extra = loadExtraFromLS(m.id);
     setForm({
-      name: m.name,
-      fatherName: extras.fatherName,
-      mobile: m.phone,
+      memberName: m.memberName,
+      fatherName: m.fatherName,
+      mobile: m.mobile,
       email: m.email,
-      bloodGroup: extras.bloodGroup,
-      currentAddress: extras.currentAddress,
-      permanentAddress: extras.permanentAddress,
-      designation: extras.designation,
-      council: m.role,
+      bloodGroup: m.bloodGroup,
+      currentAddress: m.currentAddress,
+      permanentAddress: m.permanentAddress,
+      designation: m.designation,
+      council: m.council,
+      photoDataUrl: savedPhoto,
+      dateOfBirth: extra.dateOfBirth,
+      occupation: extra.occupation,
+      education: extra.education,
+      admissionDate: extra.admissionDate || today,
     });
     setDialogOpen(true);
   }
 
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setForm((f) => ({ ...f, photoDataUrl: dataUrl }));
+    };
+    reader.readAsDataURL(file);
+  }
+
   function handleSubmit() {
-    if (!form.name.trim()) {
+    if (!form.memberName.trim()) {
       toast.error("সদস্যের নাম আবশ্যক");
       return;
     }
@@ -516,8 +658,50 @@ export default function MembersPage({ actor, isAdmin }: Props) {
     }
   }
 
-  function getMembersByRole(role: MembershipRole) {
-    return members.filter((m) => m.role === role);
+  function handlePrintFromDialog() {
+    const chapters = loadChaptersFromLS();
+    const serialNumber = editMember
+      ? String(editMember.serialNumber)
+      : getNextSerial(form.council);
+    const tempMember: CouncilMember = {
+      id: editMember?.id ?? BigInt(0),
+      council: form.council,
+      memberName: form.memberName,
+      fatherName: form.fatherName,
+      mobile: form.mobile,
+      email: form.email,
+      bloodGroup: form.bloodGroup,
+      currentAddress: form.currentAddress,
+      permanentAddress: form.permanentAddress,
+      designation: form.designation,
+      serialNumber: editMember?.serialNumber ?? BigInt(serialNumber),
+    };
+    const extra: MemberExtra = {
+      dateOfBirth: form.dateOfBirth,
+      occupation: form.occupation,
+      education: form.education,
+      admissionDate: form.admissionDate,
+    };
+    const html = generateAdmissionFormHTML(
+      tempMember,
+      serialNumber,
+      form.photoDataUrl,
+      chapters,
+      extra,
+    );
+    const win = window.open("", "_blank");
+    if (!win) {
+      toast.error("পপআপ ব্লক করা আছে।");
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.onload = () => win.focus();
+  }
+
+  function getMembersByRole(role: Council) {
+    return members.filter((m) => m.council === role);
   }
 
   const isMutating = addMutation.isPending || updateMutation.isPending;
@@ -618,42 +802,52 @@ export default function MembersPage({ actor, isAdmin }: Props) {
                             <TableHead>মোবাইল</TableHead>
                             <TableHead>রক্তের গ্রুপ</TableHead>
                             <TableHead>বর্তমান ঠিকানা</TableHead>
-                            {isAdmin && (
-                              <TableHead className="text-right">
-                                কার্যক্রম
-                              </TableHead>
-                            )}
+                            <TableHead className="text-right">কার্যক্রম</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {councilMembers.map((m, idx) => {
-                            const extras = parseExtras(m.notes);
-                            return (
-                              <TableRow
-                                key={`${m.email}-${idx}`}
-                                data-ocid={`members.${council.tab}.item.${idx + 1}`}
-                              >
-                                <TableCell className="font-mono text-center">
-                                  {extras.serial || idx + 1}
-                                </TableCell>
-                                <TableCell className="font-medium">
-                                  {m.name}
-                                </TableCell>
-                                <TableCell>{extras.fatherName}</TableCell>
-                                <TableCell>{extras.designation}</TableCell>
-                                <TableCell>{m.phone}</TableCell>
-                                <TableCell>
-                                  {extras.bloodGroup && (
-                                    <span className="bg-red-50 text-red-700 border border-red-200 text-xs px-1.5 py-0.5 rounded font-medium">
-                                      {extras.bloodGroup}
-                                    </span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="max-w-[150px] truncate">
-                                  {extras.currentAddress}
-                                </TableCell>
+                          {councilMembers.map((m, idx) => (
+                            <TableRow
+                              key={String(m.id)}
+                              data-ocid={`members.${council.tab}.item.${idx + 1}`}
+                            >
+                              <TableCell className="font-mono text-center">
+                                {String(m.serialNumber) || idx + 1}
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {m.memberName}
+                              </TableCell>
+                              <TableCell>{m.fatherName}</TableCell>
+                              <TableCell>{m.designation}</TableCell>
+                              <TableCell>{m.mobile}</TableCell>
+                              <TableCell>
+                                {m.bloodGroup && (
+                                  <span className="bg-red-50 text-red-700 border border-red-200 text-xs px-1.5 py-0.5 rounded font-medium">
+                                    {m.bloodGroup}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell className="max-w-[150px] truncate">
+                                {m.currentAddress}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() =>
+                                    printAdmissionForm(
+                                      m,
+                                      String(m.serialNumber) || idx + 1,
+                                    )
+                                  }
+                                  className="h-7 w-7"
+                                  title="ভর্তি ফর্ম প্রিন্ট করুন"
+                                  data-ocid={`members.${council.tab}.print.button.${idx + 1}`}
+                                >
+                                  <Printer size={13} />
+                                </Button>
                                 {isAdmin && (
-                                  <TableCell className="text-right">
+                                  <>
                                     <Button
                                       size="icon"
                                       variant="ghost"
@@ -672,11 +866,11 @@ export default function MembersPage({ actor, isAdmin }: Props) {
                                     >
                                       <Trash2 size={13} />
                                     </Button>
-                                  </TableCell>
+                                  </>
                                 )}
-                              </TableRow>
-                            );
-                          })}
+                              </TableCell>
+                            </TableRow>
+                          ))}
                         </TableBody>
                       </Table>
                     </div>
@@ -688,249 +882,378 @@ export default function MembersPage({ actor, isAdmin }: Props) {
         })}
       </Tabs>
 
-      {/* Add / Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent
-          className="max-w-2xl max-h-[90vh] overflow-y-auto"
-          data-ocid="members.dialog"
+      {/* Add/Edit Dialog */}
+      {isAdmin && (
+        <Dialog
+          open={dialogOpen}
+          onOpenChange={(o) => {
+            if (!o) {
+              setDialogOpen(false);
+              setEditMember(null);
+            }
+          }}
         >
-          <DialogHeader>
-            <DialogTitle style={{ color: "#1a6b2a" }}>
-              {editMember ? "সদস্য তথ্য সম্পাদনা" : "নতুন সদস্য ভর্তি ফরম"}
-            </DialogTitle>
-          </DialogHeader>
+          <DialogContent
+            className="max-w-2xl max-h-[90vh] overflow-y-auto"
+            data-ocid="members.dialog"
+          >
+            <DialogHeader>
+              <DialogTitle style={{ color: "#1a6b2a" }}>
+                {editMember ? "সদস্যের তথ্য সম্পাদনা" : "নতুন সদস্য ভর্তি ফর্ম"}
+              </DialogTitle>
+            </DialogHeader>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
-            {/* Serial number */}
-            <div className="sm:col-span-1">
+            {/* Photo Upload Section */}
+            <div className="flex flex-col items-center gap-2 py-3 border border-dashed border-primary/40 rounded-lg bg-primary/5">
               <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                ক্রমিক নম্বর
+                সদস্যের ছবি
               </Label>
-              <Input
-                value={
-                  editMember
-                    ? parseExtras(editMember.notes).serial
-                    : getNextSerial(form.council)
-                }
-                readOnly
-                className="bg-muted cursor-not-allowed"
-              />
-            </div>
-
-            {/* Council */}
-            <div className="sm:col-span-1">
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                পরিষদ *
-              </Label>
-              <Select
-                value={form.council}
-                onValueChange={(v) =>
-                  setForm((f) => ({ ...f, council: v as MembershipRole }))
-                }
+              <button
+                type="button"
+                className="w-24 h-28 border-2 border-dashed border-primary/50 rounded-md overflow-hidden bg-muted flex items-center justify-center cursor-pointer hover:border-primary transition-colors"
+                onClick={() => photoInputRef.current?.click()}
+                data-ocid="members.form.dropzone"
               >
-                <SelectTrigger data-ocid="members.form.select">
-                  <SelectValue placeholder="পরিষদ নির্বাচন করুন" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COUNCILS.map((c) => (
-                    <SelectItem key={c.role} value={c.role}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Name */}
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                সদস্যের নাম *
-              </Label>
-              <Input
-                value={form.name}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, name: e.target.value }))
-                }
-                placeholder="সম্পূর্ণ নাম লিখুন"
-                data-ocid="members.form.input"
+                {form.photoDataUrl ? (
+                  <img
+                    src={form.photoDataUrl}
+                    alt="সদস্যের ছবি"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                    <span className="text-2xl">👤</span>
+                    <span className="text-xs">ছবি যুক্ত করুন</span>
+                  </div>
+                )}
+              </button>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoChange}
+                data-ocid="members.form.upload_button"
               />
-            </div>
-
-            {/* Father's name */}
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                পিতার নাম
-              </Label>
-              <Input
-                value={form.fatherName}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, fatherName: e.target.value }))
-                }
-                placeholder="পিতার সম্পূর্ণ নাম"
-              />
-            </div>
-
-            {/* Mobile */}
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                মোবাইল নম্বর
-              </Label>
-              <Input
-                value={form.mobile}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, mobile: e.target.value }))
-                }
-                placeholder="01XXXXXXXXX"
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                ইমেইল আইডি
-              </Label>
-              <Input
-                value={form.email}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, email: e.target.value }))
-                }
-                placeholder="email@example.com"
-                type="email"
-              />
-            </div>
-
-            {/* Blood Group */}
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                রক্তের গ্রুপ
-              </Label>
-              <Select
-                value={form.bloodGroup}
-                onValueChange={(v) => setForm((f) => ({ ...f, bloodGroup: v }))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={() => photoInputRef.current?.click()}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="গ্রুপ নির্বাচন করুন" />
-                </SelectTrigger>
-                <SelectContent>
-                  {BLOOD_GROUPS.map((bg) => (
-                    <SelectItem key={bg} value={bg}>
-                      {bg}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {form.photoDataUrl ? "ছবি পরিবর্তন করুন" : "ছবি আপলোড করুন"}
+              </Button>
+              {form.photoDataUrl && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-destructive"
+                  onClick={() => setForm((f) => ({ ...f, photoDataUrl: "" }))}
+                >
+                  ছবি সরান
+                </Button>
+              )}
             </div>
 
-            {/* Designation */}
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                পদবী
-              </Label>
-              <Input
-                value={form.designation}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, designation: e.target.value }))
-                }
-                placeholder="যেমন: সভাপতি, সম্পাদক"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
+              <div className="sm:col-span-1">
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  ক্রমিক নম্বর
+                </Label>
+                <Input
+                  value={
+                    editMember
+                      ? String(editMember.serialNumber)
+                      : getNextSerial(form.council)
+                  }
+                  readOnly
+                  className="bg-muted cursor-not-allowed"
+                />
+              </div>
+
+              <div className="sm:col-span-1">
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  পরিষদ *
+                </Label>
+                <Select
+                  value={form.council}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, council: v as Council }))
+                  }
+                >
+                  <SelectTrigger data-ocid="members.form.select">
+                    <SelectValue placeholder="পরিষদ নির্বাচন করুন" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNCILS.map((c) => (
+                      <SelectItem key={c.role} value={c.role}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  সদস্যের নাম *
+                </Label>
+                <Input
+                  value={form.memberName}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, memberName: e.target.value }))
+                  }
+                  placeholder="সম্পূর্ণ নাম লিখুন"
+                  data-ocid="members.form.input"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  পিতার নাম
+                </Label>
+                <Input
+                  value={form.fatherName}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, fatherName: e.target.value }))
+                  }
+                  placeholder="পিতার সম্পূর্ণ নাম"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  মোবাইল নম্বর
+                </Label>
+                <Input
+                  value={form.mobile}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, mobile: e.target.value }))
+                  }
+                  placeholder="01XXXXXXXXX"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  ইমেইল আইডি
+                </Label>
+                <Input
+                  value={form.email}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, email: e.target.value }))
+                  }
+                  placeholder="email@example.com"
+                  type="email"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  রক্তের গ্রুপ
+                </Label>
+                <Select
+                  value={form.bloodGroup}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, bloodGroup: v }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="গ্রুপ নির্বাচন করুন" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BLOOD_GROUPS.map((bg) => (
+                      <SelectItem key={bg} value={bg}>
+                        {bg}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  জন্ম তারিখ
+                </Label>
+                <Input
+                  type="date"
+                  value={form.dateOfBirth}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, dateOfBirth: e.target.value }))
+                  }
+                  data-ocid="members.form.dob.input"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  পেশা
+                </Label>
+                <Input
+                  value={form.occupation}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, occupation: e.target.value }))
+                  }
+                  placeholder="যেমন: শিক্ষক, ব্যবসায়ী"
+                  data-ocid="members.form.occupation.input"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  শিক্ষাগত যোগ্যতা
+                </Label>
+                <Input
+                  value={form.education}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, education: e.target.value }))
+                  }
+                  placeholder="যেমন: স্নাতক, মাস্টার্স"
+                  data-ocid="members.form.education.input"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  ভর্তির তারিখ
+                </Label>
+                <Input
+                  type="date"
+                  value={form.admissionDate}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, admissionDate: e.target.value }))
+                  }
+                  data-ocid="members.form.admission-date.input"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  পদবী
+                </Label>
+                <Input
+                  value={form.designation}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, designation: e.target.value }))
+                  }
+                  placeholder="যেমন: সভাপতি, সম্পাদক"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  বর্তমান ঠিকানা
+                </Label>
+                <Textarea
+                  value={form.currentAddress}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, currentAddress: e.target.value }))
+                  }
+                  placeholder="বর্তমান বাসস্থানের ঠিকানা"
+                  rows={2}
+                  data-ocid="members.form.textarea"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  স্থায়ী ঠিকানা
+                </Label>
+                <Textarea
+                  value={form.permanentAddress}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, permanentAddress: e.target.value }))
+                  }
+                  placeholder="স্থায়ী বাসস্থানের ঠিকানা"
+                  rows={2}
+                />
+              </div>
             </div>
 
-            {/* Current Address */}
-            <div className="sm:col-span-2">
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                বর্তমান ঠিকানা
-              </Label>
-              <Textarea
-                value={form.currentAddress}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, currentAddress: e.target.value }))
-                }
-                placeholder="বর্তমান বাসস্থানের ঠিকানা"
-                rows={2}
-                data-ocid="members.form.textarea"
-              />
-            </div>
-
-            {/* Permanent Address */}
-            <div className="sm:col-span-2">
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                স্থায়ী ঠিকানা
-              </Label>
-              <Textarea
-                value={form.permanentAddress}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, permanentAddress: e.target.value }))
-                }
-                placeholder="স্থায়ী বাসস্থানের ঠিকানা"
-                rows={2}
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="mt-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDialogOpen(false);
-                setEditMember(null);
-              }}
-              data-ocid="members.dialog.cancel_button"
-            >
-              বাতিল
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={isMutating}
-              style={{ background: "#1a6b2a" }}
-              className="text-white"
-              data-ocid="members.dialog.submit_button"
-            >
-              {isMutating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {editMember ? "আপডেট করুন" : "ভর্তি করুন"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter className="mt-2 flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDialogOpen(false);
+                  setEditMember(null);
+                }}
+                data-ocid="members.dialog.cancel_button"
+              >
+                বাতিল
+              </Button>
+              {form.memberName.trim() && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePrintFromDialog}
+                  className="gap-1.5"
+                  style={{ color: "#1a6b2a", borderColor: "#1a6b2a" }}
+                  data-ocid="members.dialog.print_button"
+                >
+                  <Printer size={14} />
+                  ভর্তি ফর্ম প্রিন্ট করুন
+                </Button>
+              )}
+              <Button
+                onClick={handleSubmit}
+                disabled={isMutating}
+                style={{ background: "#1a6b2a" }}
+                className="text-white"
+                data-ocid="members.dialog.submit_button"
+              >
+                {isMutating && (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                )}
+                {editMember ? "আপডেট করুন" : "ভর্তি করুন"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={!!deleteTarget}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
-      >
-        <DialogContent data-ocid="members.delete.dialog">
-          <DialogHeader>
-            <DialogTitle style={{ color: "#8b0000" }}>
-              সদস্য মুছে ফেলুন
-            </DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            আপনি কি নিশ্চিত যে <strong>{deleteTarget?.name}</strong>-কে তালিকা থেকে
-            মুছে ফেলতে চান? এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
-          </p>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteTarget(null)}
-              data-ocid="members.delete.cancel_button"
-            >
-              না, বাতিল
-            </Button>
-            <Button
-              onClick={() =>
-                deleteTarget && deleteMutation.mutate(deleteTarget.id)
-              }
-              disabled={deleteMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              data-ocid="members.delete.confirm_button"
-            >
-              {deleteMutation.isPending && (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              )}
-              হ্যাঁ, মুছে ফেলুন
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {isAdmin && (
+        <Dialog
+          open={!!deleteTarget}
+          onOpenChange={(o) => !o && setDeleteTarget(null)}
+        >
+          <DialogContent data-ocid="members.delete.dialog">
+            <DialogHeader>
+              <DialogTitle style={{ color: "#8b0000" }}>
+                সদস্য মুছে ফেলুন
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              আপনি কি নিশ্চিত যে <strong>{deleteTarget?.memberName}</strong>-কে
+              তালিকা থেকে মুছে ফেলতে চান? এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
+            </p>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteTarget(null)}
+                data-ocid="members.delete.cancel_button"
+              >
+                না, বাতিল
+              </Button>
+              <Button
+                onClick={() =>
+                  deleteTarget && deleteMutation.mutate(deleteTarget.id)
+                }
+                disabled={deleteMutation.isPending}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                data-ocid="members.delete.confirm_button"
+              >
+                {deleteMutation.isPending && (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                )}
+                হ্যাঁ, মুছে ফেলুন
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

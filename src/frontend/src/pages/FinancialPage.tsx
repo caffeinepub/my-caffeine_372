@@ -76,72 +76,6 @@ interface ExpenseCategory {
 const INIT_INCOME_CATS = ["বাহিরের অনুদান", "সদস্যদের নিয়মিত ত্রৈমাসিক চাঁদা"];
 const DEFAULT_EXPENSE_CATS = ["শীতবস্ত্র বিতরণ", "শিক্ষা উপকরণ বিতরণ"];
 
-const SEED_INCOME: IncomeRecord[] = [
-  {
-    id: 1n,
-    serialNumber: 1n,
-    date: "2026-01-15",
-    category: "বাহিরের অনুদান",
-    donorName: "মোহাম্মদ রফিকুল ইসলাম",
-    fatherName: "মোহাম্মদ আব্দুল করিম",
-    donorAddress: "ঢাকা, বাংলাদেশ",
-    mobile: "01711-111222",
-    amount: 50000,
-    designation: "সভাপতি",
-  },
-  {
-    id: 2n,
-    serialNumber: 2n,
-    date: "2026-02-10",
-    category: "সদস্যদের নিয়মিত ত্রৈমাসিক চাঁদা",
-    donorName: "সালমা বেগম",
-    fatherName: "মোহাম্মদ সিরাজুল ইসলাম",
-    donorAddress: "চট্টগ্রাম",
-    mobile: "01811-222333",
-    amount: 3000,
-    designation: "সাধারণ সদস্য",
-  },
-  {
-    id: 3n,
-    serialNumber: 3n,
-    date: "2026-03-01",
-    category: "বাহিরের অনুদান",
-    donorName: "আহসানউল্লাহ ট্রাস্ট",
-    fatherName: "",
-    donorAddress: "রাজশাহী",
-    mobile: "01911-333444",
-    amount: 100000,
-    designation: "",
-  },
-];
-
-const SEED_EXPENSE: ExpenseRecord[] = [
-  {
-    id: 1n,
-    serialNumber: 1n,
-    date: "2026-01-20",
-    category: "শীতবস্ত্র বিতরণ",
-    recipientName: "আব্দুল করিম",
-    fatherName: "মোহাম্মদ আলী",
-    recipientAddress: "ময়মনসিংহ",
-    mobile: "01611-444555",
-    amount: 15000,
-    proofFileId: "",
-  },
-  {
-    id: 2n,
-    serialNumber: 2n,
-    date: "2026-02-15",
-    category: "শিক্ষা উপকরণ বিতরণ",
-    recipientName: "রাহেলা খাতুন",
-    fatherName: "আব্দুল হামিদ",
-    recipientAddress: "সিলেট",
-    mobile: "01511-555666",
-    amount: 8000,
-    proofFileId: "",
-  },
-];
-
 const MONTHS = ["১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯", "১০", "১১", "১২"];
 
 interface OrgSettings {
@@ -358,40 +292,56 @@ export default function FinancialPage({ actor, isAdmin, defaultTab }: Props) {
   });
   const [showNewCat, setShowNewCat] = useState(false);
 
-  const { data: incomeRecordsRaw = SEED_INCOME, isLoading: incomeLoading } =
-    useQuery<IncomeRecord[]>({
-      queryKey: ["incomeRecords"],
-      queryFn: async () => {
-        if (!actor) return SEED_INCOME;
-        try {
-          const l = await (actor as any).getAllIncomeRecords();
-          return l.length > 0 ? l : SEED_INCOME;
-        } catch {
-          return SEED_INCOME;
-        }
-      },
-      enabled: !!actor,
-    });
+  const { data: incomeRecordsRaw = [], isLoading: incomeLoading } = useQuery<
+    IncomeRecord[]
+  >({
+    queryKey: ["incomeRecords"],
+    queryFn: async () => {
+      if (!actor) return [];
+      try {
+        const l = await (actor as any).getAllIncomeRecords();
+        const parsed = l.map((r: any) => {
+          const des: string = r.designation || "";
+          const sepIdx = des.indexOf("|FATHER|");
+          const fatherName = sepIdx >= 0 ? des.slice(0, sepIdx) : "";
+          const designation = sepIdx >= 0 ? des.slice(sepIdx + 8) : des;
+          return { ...r, fatherName, designation };
+        });
+        return parsed.length > 0 ? parsed : [];
+      } catch {
+        return [];
+      }
+    },
+    enabled: !!actor,
+  });
 
   // Merge local edits
   const incomeRecords = incomeRecordsRaw.map(
     (r) => incomeEdits[String(r.id)] ?? r,
   );
 
-  const { data: expenseRecordsRaw = SEED_EXPENSE, isLoading: expenseLoading } =
-    useQuery<ExpenseRecord[]>({
-      queryKey: ["expenseRecords"],
-      queryFn: async () => {
-        if (!actor) return SEED_EXPENSE;
-        try {
-          const l = await (actor as any).getAllExpenseRecords();
-          return l.length > 0 ? l : SEED_EXPENSE;
-        } catch {
-          return SEED_EXPENSE;
-        }
-      },
-      enabled: !!actor,
-    });
+  const { data: expenseRecordsRaw = [], isLoading: expenseLoading } = useQuery<
+    ExpenseRecord[]
+  >({
+    queryKey: ["expenseRecords"],
+    queryFn: async () => {
+      if (!actor) return [];
+      try {
+        const l = await (actor as any).getAllExpenseRecords();
+        const parsedExp = l.map((r: any) => {
+          const pf: string = r.proofFileId || "";
+          const sepIdx = pf.indexOf("|PROOF|");
+          const fatherName = sepIdx >= 0 ? pf.slice(0, sepIdx) : "";
+          const proofFileId = sepIdx >= 0 ? pf.slice(sepIdx + 7) : pf;
+          return { ...r, fatherName, proofFileId };
+        });
+        return parsedExp.length > 0 ? parsedExp : [];
+      } catch {
+        return [];
+      }
+    },
+    enabled: !!actor,
+  });
 
   const expenseRecords = expenseRecordsRaw.map(
     (r) => expenseEdits[String(r.id)] ?? r,
@@ -413,15 +363,17 @@ export default function FinancialPage({ actor, isAdmin, defaultTab }: Props) {
   const addIncomeMutation = useMutation({
     mutationFn: async () => {
       if (!actor) throw new Error("No actor");
+      const encodedDesignation = incomeForm.fatherName
+        ? `${incomeForm.fatherName}|FATHER|${incomeForm.designation}`
+        : incomeForm.designation;
       await (actor as any).addIncomeRecord(
         incomeForm.date,
         incomeForm.category,
         incomeForm.donorName,
-        incomeForm.fatherName,
         incomeForm.donorAddress,
         incomeForm.mobile,
         Number.parseFloat(incomeForm.amount) || 0,
-        incomeForm.designation,
+        encodedDesignation,
       );
     },
     onSuccess: () => {
@@ -485,15 +437,17 @@ export default function FinancialPage({ actor, isAdmin, defaultTab }: Props) {
       const cat = showNewCat ? expenseForm.newCategory : expenseForm.category;
       if (showNewCat && expenseForm.newCategory.trim())
         await (actor as any).addExpenseCategory(expenseForm.newCategory.trim());
+      const encodedProofFileId = expenseForm.fatherName
+        ? `${expenseForm.fatherName}|PROOF|${expenseForm.proofFileName}`
+        : expenseForm.proofFileName;
       await (actor as any).addExpenseRecord(
         expenseForm.date,
         cat,
         expenseForm.recipientName,
-        expenseForm.fatherName,
         expenseForm.recipientAddress,
         expenseForm.mobile,
         Number.parseFloat(expenseForm.amount) || 0,
-        expenseForm.proofFileName,
+        encodedProofFileId,
       );
     },
     onSuccess: () => {
@@ -902,17 +856,19 @@ export default function FinancialPage({ actor, isAdmin, defaultTab }: Props) {
                 type="number"
               />
             </div>
-            <Button
-              onClick={() => {
-                setEditIncomeTarget(null);
-                setIncomeDialogOpen(true);
-              }}
-              style={{ background: "#166534" }}
-              className="text-white flex-shrink-0 text-base px-5 py-2"
-              data-ocid="financial.income.open_modal_button"
-            >
-              <Plus size={18} className="mr-2" /> ➕ নতুন আয় রেকর্ড করুন
-            </Button>
+            {isAdmin && (
+              <Button
+                onClick={() => {
+                  setEditIncomeTarget(null);
+                  setIncomeDialogOpen(true);
+                }}
+                style={{ background: "#166534" }}
+                className="text-white flex-shrink-0 text-base px-5 py-2"
+                data-ocid="financial.income.open_modal_button"
+              >
+                <Plus size={18} className="mr-2" /> ➕ নতুন আয় রেকর্ড করুন
+              </Button>
+            )}
           </div>
           <Card>
             <CardContent className="pt-4 overflow-x-auto">
@@ -1099,17 +1055,19 @@ export default function FinancialPage({ actor, isAdmin, defaultTab }: Props) {
                 type="number"
               />
             </div>
-            <Button
-              onClick={() => {
-                setEditExpenseTarget(null);
-                setExpenseDialogOpen(true);
-              }}
-              style={{ background: "#991b1b" }}
-              className="text-white flex-shrink-0 text-base px-5 py-2"
-              data-ocid="financial.expense.open_modal_button"
-            >
-              <Plus size={18} className="mr-2" /> ➕ নতুন ব্যয় রেকর্ড করুন
-            </Button>
+            {isAdmin && (
+              <Button
+                onClick={() => {
+                  setEditExpenseTarget(null);
+                  setExpenseDialogOpen(true);
+                }}
+                style={{ background: "#991b1b" }}
+                className="text-white flex-shrink-0 text-base px-5 py-2"
+                data-ocid="financial.expense.open_modal_button"
+              >
+                <Plus size={18} className="mr-2" /> ➕ নতুন ব্যয় রেকর্ড করুন
+              </Button>
+            )}
           </div>
           <Card>
             <CardContent className="pt-4 overflow-x-auto">

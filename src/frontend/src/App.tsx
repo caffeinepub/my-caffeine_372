@@ -1,11 +1,27 @@
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/sonner";
-import { BookOpen, Home, Menu, Settings, Users, Wallet } from "lucide-react";
+import {
+  Bell,
+  BookOpen,
+  ClipboardList,
+  Home,
+  Lock,
+  Menu,
+  Settings,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { useState } from "react";
 import { useActor } from "./hooks/useActor";
 import ConstitutionPage from "./pages/ConstitutionPage";
@@ -13,6 +29,8 @@ import DashboardPage from "./pages/DashboardPage";
 import FinancialPage from "./pages/FinancialPage";
 import LoginPage from "./pages/LoginPage";
 import MembersPage from "./pages/MembersPage";
+import NoticeBoardPage from "./pages/NoticeBoardPage";
+import ResolutionPadPage from "./pages/ResolutionPadPage";
 import SettingsPage from "./pages/SettingsPage";
 import {
   type AuthSession,
@@ -29,7 +47,9 @@ export type Page =
   | "members"
   | "settings"
   | "constitution"
-  | "financial";
+  | "financial"
+  | "noticeboard"
+  | "resolution";
 
 export default function App() {
   const { actor } = useActor();
@@ -42,6 +62,7 @@ export default function App() {
   );
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsVersion, setSettingsVersion] = useState(0);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   const isAdmin = session?.role === "admin" || session?.role === "superadmin";
   const isSuperAdmin = session?.role === "superadmin";
@@ -60,15 +81,6 @@ export default function App() {
     setSession(null);
   }
 
-  if (!session) {
-    return (
-      <>
-        <LoginPage onLogin={(s) => setSession(s)} />
-        <Toaster />
-      </>
-    );
-  }
-
   const logoSrc =
     orgSettings.logoDataUrl ||
     "/assets/generated/apon-foundation-logo-transparent.dim_200x200.png";
@@ -78,7 +90,21 @@ export default function App() {
     { key: "members", label: "সদস্য তালিকা", icon: <Users size={18} /> },
     { key: "constitution", label: "গঠনতন্ত্র", icon: <BookOpen size={18} /> },
     { key: "financial", label: "আর্থিক ব্যবস্থাপনা", icon: <Wallet size={18} /> },
-    { key: "settings", label: "সেটিং", icon: <Settings size={18} /> },
+    { key: "noticeboard", label: "নোটিশ বোর্ড", icon: <Bell size={18} /> },
+    {
+      key: "resolution",
+      label: "রেজুলেশন প্যাড",
+      icon: <ClipboardList size={18} />,
+    },
+    ...(isAdmin
+      ? [
+          {
+            key: "settings" as Page,
+            label: "সেটিং",
+            icon: <Settings size={18} />,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -119,31 +145,44 @@ export default function App() {
               <Menu size={18} />
               <span>মেনু</span>
             </button>
-            <div className="flex items-center gap-2 text-sm flex-shrink-0">
-              <span className="text-muted-foreground hidden lg:block text-xs">
-                {session.email}
-              </span>
-              {isSuperAdmin ? (
-                <span
-                  className="text-xs px-2 py-0.5 rounded-full font-medium text-white"
-                  style={{ background: "#1a6b2a" }}
+            {session ? (
+              <div className="flex items-center gap-2 text-sm flex-shrink-0">
+                <span className="text-muted-foreground hidden lg:block text-xs">
+                  {session.email}
+                </span>
+                {isSuperAdmin ? (
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full font-medium text-white"
+                    style={{ background: "#1a6b2a" }}
+                  >
+                    সুপার এডমিন
+                  </span>
+                ) : isAdmin ? (
+                  <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                    এডমিন
+                  </span>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border"
+                  data-ocid="nav.logout.button"
                 >
-                  সুপার এডমিন
-                </span>
-              ) : isAdmin ? (
-                <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium">
-                  এডমিন
-                </span>
-              ) : null}
+                  লগ আউট
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
-                onClick={handleLogout}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border"
-                data-ocid="nav.logout.button"
+                onClick={() => setLoginModalOpen(true)}
+                className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded border border-border hover:bg-secondary transition-colors"
+                style={{ color: "#1a6b2a" }}
+                data-ocid="nav.login.button"
               >
-                লগ আউট
+                <Lock size={13} />
+                এডমিন লগইন
               </button>
-            </div>
+            )}
           </div>
         </div>
       </header>
@@ -176,6 +215,21 @@ export default function App() {
                 {item.label}
               </button>
             ))}
+            {!session && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSidebarOpen(false);
+                  setLoginModalOpen(true);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-left hover:bg-secondary"
+                style={{ color: "#1a6b2a" }}
+                data-ocid="nav.admin_login.link"
+              >
+                <Lock size={18} />
+                এডমিন লগইন
+              </button>
+            )}
           </nav>
         </SheetContent>
       </Sheet>
@@ -199,7 +253,9 @@ export default function App() {
             defaultTab={financialTab}
           />
         )}
-        {page === "settings" && (
+        {page === "noticeboard" && <NoticeBoardPage isAdmin={isAdmin} />}
+        {page === "resolution" && <ResolutionPadPage isAdmin={isAdmin} />}
+        {page === "settings" && isAdmin && (
           <SettingsPage
             isSuperAdmin={isSuperAdmin}
             onSave={() => {
@@ -223,6 +279,25 @@ export default function App() {
           </a>
         </p>
       </footer>
+
+      {/* Login Modal */}
+      <Dialog open={loginModalOpen} onOpenChange={setLoginModalOpen}>
+        <DialogContent
+          className="max-w-md p-0 overflow-hidden"
+          data-ocid="login.modal"
+        >
+          <DialogHeader className="sr-only">
+            <DialogTitle>এডমিন লগইন</DialogTitle>
+          </DialogHeader>
+          <LoginPage
+            onLogin={(s) => {
+              setSession(s);
+              setLoginModalOpen(false);
+            }}
+            isModal
+          />
+        </DialogContent>
+      </Dialog>
 
       <Toaster />
     </div>

@@ -10,100 +10,119 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
-export interface DashboardStats {
-  'totalActiveMembers' : bigint,
-  'activeProjectsCount' : bigint,
-  'totalDonationsSum' : number,
-  'upcomingEventsCount' : bigint,
-}
-export interface Donation {
+export interface ConstitutionChapter {
   'id' : bigint,
-  'memberId' : [] | [Principal],
-  'date' : bigint,
+  'title' : string,
+  'content' : string,
+  'chapterNumber' : bigint,
+}
+export type Council = { 'upadeshataParishad' : null } |
+  { 'sadharanParishad' : null } |
+  { 'karyanirbahaParishad' : null };
+export interface CouncilMember {
+  'id' : bigint,
+  'council' : Council,
+  'designation' : string,
+  'email' : string,
+  'permanentAddress' : string,
+  'serialNumber' : bigint,
+  'fatherName' : string,
+  'bloodGroup' : string,
+  'memberName' : string,
+  'currentAddress' : string,
+  'mobile' : string,
+}
+export interface ExpenseCategory { 'id' : bigint, 'name' : string }
+export interface ExpenseRecord {
+  'id' : bigint,
+  'date' : string,
+  'proofFileId' : string,
+  'serialNumber' : bigint,
+  'category' : string,
+  'mobile' : string,
+  'recipientAddress' : string,
+  'amount' : number,
+  'recipientName' : string,
+}
+export interface IncomeRecord {
+  'id' : bigint,
+  'date' : string,
+  'designation' : string,
   'donorName' : string,
-  'notes' : string,
-  'category' : DonationCategory,
+  'donorAddress' : string,
+  'serialNumber' : bigint,
+  'category' : string,
+  'mobile' : string,
   'amount' : number,
 }
-export type DonationCategory = { 'cash' : null } |
-  { 'inKind' : null } |
-  { 'grant' : null };
-export type EventStatus = { 'upcoming' : null } |
-  { 'cancelled' : null } |
-  { 'completed' : null } |
-  { 'ongoing' : null };
-export interface EventView {
-  'id' : bigint,
-  'status' : EventStatus,
-  'title' : string,
-  'registeredAttendees' : Array<Principal>,
-  'maxAttendees' : bigint,
-  'date' : bigint,
-  'description' : string,
-  'location' : string,
-}
-export interface Member {
-  'id' : Principal,
-  'status' : MemberStatus,
-  'joinDate' : bigint,
-  'name' : string,
-  'role' : MembershipRole,
-  'email' : string,
-  'notes' : string,
-  'phone' : string,
-}
-export type MemberStatus = { 'active' : null } |
-  { 'inactive' : null };
-export type MembershipRole = { 'member' : null } |
-  { 'board' : null } |
-  { 'volunteer' : null };
-export interface Project {
-  'id' : bigint,
-  'status' : ProjectStatus,
-  'title' : string,
-  'endDate' : bigint,
-  'description' : string,
-  'spent' : number,
-  'budget' : number,
-  'startDate' : bigint,
-}
-export type ProjectStatus = { 'active' : null } |
-  { 'completed' : null } |
-  { 'onHold' : null } |
-  { 'planning' : null };
 export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
+export interface _CaffeineStorageCreateCertificateResult {
+  'method' : string,
+  'blob_hash' : string,
+}
+export interface _CaffeineStorageRefillInformation {
+  'proposed_top_up_amount' : [] | [bigint],
+}
+export interface _CaffeineStorageRefillResult {
+  'success' : [] | [boolean],
+  'topped_up_amount' : [] | [bigint],
+}
 export interface _SERVICE {
+  '_caffeineStorageBlobIsLive' : ActorMethod<[Uint8Array], boolean>,
+  '_caffeineStorageBlobsToDelete' : ActorMethod<[], Array<Uint8Array>>,
+  '_caffeineStorageConfirmBlobDeletion' : ActorMethod<
+    [Array<Uint8Array>],
+    undefined
+  >,
+  '_caffeineStorageCreateCertificate' : ActorMethod<
+    [string],
+    _CaffeineStorageCreateCertificateResult
+  >,
+  '_caffeineStorageRefillCashier' : ActorMethod<
+    [[] | [_CaffeineStorageRefillInformation]],
+    _CaffeineStorageRefillResult
+  >,
+  '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
-  'addDonation' : ActorMethod<[Donation], undefined>,
-  'addEvent' : ActorMethod<[EventView], undefined>,
-  'addMember' : ActorMethod<[Member], undefined>,
-  'addProject' : ActorMethod<[Project], undefined>,
+  'addChapter' : ActorMethod<[string, string], ConstitutionChapter>,
+  'addExpenseCategory' : ActorMethod<[string], ExpenseCategory>,
+  'addExpenseRecord' : ActorMethod<
+    [string, string, string, string, string, number, string],
+    ExpenseRecord
+  >,
+  'addIncomeRecord' : ActorMethod<
+    [string, string, string, string, string, number, string],
+    IncomeRecord
+  >,
+  'addMember' : ActorMethod<
+    [Council, string, string, string, string, string, string, string, string],
+    CouncilMember
+  >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'deleteDonation' : ActorMethod<[bigint], undefined>,
-  'deleteEvent' : ActorMethod<[bigint], undefined>,
-  'deleteMember' : ActorMethod<[Principal], undefined>,
-  'deleteProject' : ActorMethod<[bigint], undefined>,
-  'getAllDonations' : ActorMethod<[], Array<Donation>>,
-  'getAllEvents' : ActorMethod<[], Array<EventView>>,
-  'getAllMembers' : ActorMethod<[], Array<Member>>,
-  'getAllProjects' : ActorMethod<[], Array<Project>>,
+  'deleteChapter' : ActorMethod<[bigint], undefined>,
+  'deleteExpenseCategory' : ActorMethod<[bigint], undefined>,
+  'deleteExpenseRecord' : ActorMethod<[bigint], undefined>,
+  'deleteIncomeRecord' : ActorMethod<[bigint], undefined>,
+  'deleteMember' : ActorMethod<[bigint], undefined>,
+  'getAllChapters' : ActorMethod<[], Array<ConstitutionChapter>>,
+  'getAllExpenseCategories' : ActorMethod<[], Array<ExpenseCategory>>,
+  'getAllExpenseRecords' : ActorMethod<[], Array<ExpenseRecord>>,
+  'getAllIncomeRecords' : ActorMethod<[], Array<IncomeRecord>>,
+  'getAllMembers' : ActorMethod<[], Array<CouncilMember>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getDashboardStats' : ActorMethod<[], DashboardStats>,
-  'getDonation' : ActorMethod<[bigint], [] | [Donation]>,
-  'getEvent' : ActorMethod<[bigint], [] | [EventView]>,
-  'getMember' : ActorMethod<[Principal], [] | [Member]>,
-  'getProject' : ActorMethod<[bigint], [] | [Project]>,
+  'getMembersByCouncil' : ActorMethod<[Council], Array<CouncilMember>>,
+  'getNextSerialNumber' : ActorMethod<[], bigint>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
-  'updateDonation' : ActorMethod<[bigint, Donation], undefined>,
-  'updateEvent' : ActorMethod<[bigint, EventView], undefined>,
-  'updateMember' : ActorMethod<[Principal, Member], undefined>,
-  'updateProject' : ActorMethod<[bigint, Project], undefined>,
+  'updateChapter' : ActorMethod<[bigint, string, string], undefined>,
+  'updateExpenseRecord' : ActorMethod<[bigint, ExpenseRecord], undefined>,
+  'updateIncomeRecord' : ActorMethod<[bigint, IncomeRecord], undefined>,
+  'updateMember' : ActorMethod<[bigint, CouncilMember], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];
