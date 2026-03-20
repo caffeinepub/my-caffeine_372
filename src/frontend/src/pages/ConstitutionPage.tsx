@@ -11,10 +11,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  BookOpen,
+  Download,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { backendInterface } from "../backend";
+import { loadSettings } from "../store/settingsStore";
 
 interface ConstitutionChapter {
   id: bigint;
@@ -45,6 +53,11 @@ export default function ConstitutionPage({ actor, isAdmin }: Props) {
   const [deleteTarget, setDeleteTarget] = useState<ConstitutionChapter | null>(
     null,
   );
+
+  const org = loadSettings();
+  const logoSrc =
+    org.logoDataUrl ||
+    "/assets/generated/apon-foundation-logo-transparent.dim_200x200.png";
 
   const LS_KEY = "aponConstitutionChapters";
 
@@ -81,9 +94,7 @@ export default function ConstitutionPage({ actor, isAdmin }: Props) {
   const { data: chapters = [], isLoading } = useQuery<ConstitutionChapter[]>({
     queryKey: ["chapters"],
     queryFn: async () => {
-      if (!actor) {
-        return loadFromLS();
-      }
+      if (!actor) return loadFromLS();
       try {
         const list = await (actor as any).getAllChapters();
         if (list.length > 0) {
@@ -210,6 +221,176 @@ export default function ConstitutionPage({ actor, isAdmin }: Props) {
     }
   }
 
+  function handleDownloadPDF() {
+    const year = new Date().getFullYear();
+    const chapterPages = chapters
+      .map(
+        (ch) => `
+      <div class="chapter-block">
+        <div class="chapter-header">
+          <div class="org-header">
+            <img src="${logoSrc}" class="org-logo" alt="" onerror="this.style.display='none'"/>
+            <div class="org-info">
+              <div class="org-name"><span class="name1">${org.orgName1}</span> <span class="name2">${org.orgName2}</span></div>
+              <div class="org-meta">${org.address} | ইমেইল: ${org.email} | হোয়াটসঅ্যাপ: ${org.whatsapp} | ওয়েব: ${org.website}</div>
+            </div>
+          </div>
+          <div class="chapter-badge-row">
+            <span class="chapter-badge">অধ্যায় ${String(ch.chapterNumber)}</span>
+            <span class="chapter-title">${ch.title}</span>
+          </div>
+        </div>
+        <div class="chapter-content">${ch.content.replace(/\n/g, "<br/>")}</div>
+      </div>
+    `,
+      )
+      .join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8"/>
+<title>গঠনতন্ত্র — ${org.orgName1} ${org.orgName2}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+body { font-family:'Noto Sans Bengali',sans-serif; background:#fff; }
+
+/* Cover Page */
+.cover-page {
+  width:210mm;
+  height:297mm;
+  background: linear-gradient(160deg, #0f4c2a 0%, #1a6b3a 40%, #0f4c2a 100%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  page-break-after:always;
+  position:relative;
+  overflow:hidden;
+}
+.cover-bg-ornament {
+  position:absolute; top:0; left:0; right:0; bottom:0;
+  background-image: radial-gradient(circle at 20% 20%, rgba(212,175,55,0.08) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(212,175,55,0.08) 0%, transparent 50%);
+}
+.cover-logo {
+  width:100px; height:100px; object-fit:contain;
+  filter:drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+  margin-bottom:24px;
+}
+.cover-top-line {
+  width:180px; height:2px;
+  background:linear-gradient(90deg, transparent, #d4af37, transparent);
+  margin-bottom:28px;
+}
+.cover-main-title {
+  font-size:34px; font-weight:800; color:#d4af37;
+  letter-spacing:0.04em;
+  text-align:center;
+  line-height:1.3;
+  margin-bottom:8px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.cover-org-name {
+  font-size:22px; font-weight:700; color:#ffffff;
+  text-align:center; margin-bottom:30px;
+  letter-spacing:0.02em;
+}
+.cover-divider {
+  width:260px; height:1px;
+  background:linear-gradient(90deg, transparent, #d4af37 30%, #d4af37 70%, transparent);
+  margin-bottom:30px;
+}
+.cover-meta {
+  text-align:center; color:rgba(255,255,255,0.82);
+  font-size:13px; line-height:2; max-width:340px;
+}
+.cover-meta .label { color:#d4af37; font-weight:600; font-size:12px; display:block; margin-top:14px; }
+.cover-bottom-line {
+  width:180px; height:2px;
+  background:linear-gradient(90deg, transparent, #d4af37, transparent);
+  margin-top:30px; margin-bottom:12px;
+}
+.cover-year { color:rgba(255,255,255,0.55); font-size:13px; }
+
+/* Chapter Pages */
+.chapter-block {
+  width:210mm;
+  margin:0 auto;
+  padding:18mm 20mm;
+  background:#fff;
+  page-break-after:always;
+  page-break-inside:auto;
+}
+.org-header { display:flex; align-items:center; gap:14px; border-bottom:3px double #166534; padding-bottom:10px; margin-bottom:14px; }
+.org-logo { width:56px; height:56px; object-fit:contain; }
+.org-name { font-size:20px; font-weight:700; }
+.name1 { color:${org.color1}; }
+.name2 { color:${org.color2}; }
+.org-meta { font-size:11px; color:#444; margin-top:3px; line-height:1.6; }
+.chapter-badge-row { display:flex; align-items:center; gap:12px; margin:18px 0 10px; }
+.chapter-badge { background:#166534; color:#fff; font-size:12px; font-weight:700; padding:4px 14px; border-radius:20px; white-space:nowrap; }
+.chapter-title { font-size:17px; font-weight:700; color:#166534; }
+.chapter-content { font-size:13px; line-height:2.1; color:#111; white-space:pre-wrap; margin-top:10px; }
+
+@media print {
+  @page { size:A4; margin:0; }
+  body { margin:0; }
+  .cover-page {
+    page-break-after:always;
+    background: linear-gradient(160deg, #0f4c2a 0%, #1a6b3a 40%, #0f4c2a 100%) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .cover-main-title { color:#d4af37 !important; }
+  .cover-org-name { color:#ffffff !important; }
+  .cover-meta { color:rgba(255,255,255,0.9) !important; }
+  .cover-meta .label { color:#d4af37 !important; }
+  .cover-year { color:rgba(255,255,255,0.7) !important; }
+  .cover-top-line, .cover-bottom-line { background:linear-gradient(90deg, transparent, #d4af37, transparent) !important; }
+  .cover-divider { background:linear-gradient(90deg, transparent, #d4af37 30%, #d4af37 70%, transparent) !important; }
+  .chapter-badge { background:#166534 !important; color:#fff !important; }
+  .chapter-block { page-break-after:always; page-break-inside:auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- Cover Page -->
+<div class="cover-page">
+  <div class="cover-bg-ornament"></div>
+  <img src="${logoSrc}" class="cover-logo" alt="" onerror="this.style.display='none'"/>
+  <div class="cover-top-line"></div>
+  <div class="cover-main-title">গঠনতন্ত্র ও নীতিমালা</div>
+  <div class="cover-org-name">${org.orgName1} ${org.orgName2}</div>
+  <div class="cover-divider"></div>
+  <div class="cover-meta">
+    <span class="label">সংকলন ও সম্পাদনায়</span>
+    মুহাম্মদ উজ্জল মিয়া<br/>উপদেষ্টা, আপন ফাউন্ডেশন
+    <span class="label">সহযোগিতায়</span>
+    আব্দুল জিহাদ<br/>প্রধান উদ্যোক্তা ও প্রতিষ্ঠাতা উপদেষ্টা, আপন ফাউন্ডেশন
+  </div>
+  <div class="cover-bottom-line"></div>
+  <div class="cover-year">${year}</div>
+</div>
+
+<!-- Chapter Pages -->
+${chapterPages}
+
+<script>window.onload=function(){window.print();}</script>
+</body>
+</html>`;
+
+    const win = window.open("", "_blank", "width=1000,height=800");
+    if (!win) {
+      toast.error("পপআপ ব্লক হয়েছে, অনুগ্রহ করে অনুমতি দিন");
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  }
+
   const isMutating = addMutation.isPending || updateMutation.isPending;
 
   return (
@@ -219,16 +400,28 @@ export default function ConstitutionPage({ actor, isAdmin }: Props) {
           <BookOpen size={24} style={{ color: "#166534" }} />
           <h1 className="text-2xl font-bold text-foreground">গঠনতন্ত্র</h1>
         </div>
-        {isAdmin && (
-          <Button
-            onClick={openAdd}
-            style={{ background: "#166534" }}
-            className="text-white"
-            data-ocid="constitution.open_modal_button"
-          >
-            <Plus size={16} className="mr-1" /> নতুন অধ্যায় যোগ করুন
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {chapters.length > 0 && (
+            <Button
+              onClick={handleDownloadPDF}
+              variant="outline"
+              className="border-amber-600 text-amber-700 hover:bg-amber-50"
+              data-ocid="constitution.download_button"
+            >
+              <Download size={16} className="mr-1" /> PDF ডাউনলোড
+            </Button>
+          )}
+          {isAdmin && (
+            <Button
+              onClick={openAdd}
+              style={{ background: "#166534" }}
+              className="text-white"
+              data-ocid="constitution.open_modal_button"
+            >
+              <Plus size={16} className="mr-1" /> নতুন অধ্যায় যোগ করুন
+            </Button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (

@@ -21,8 +21,11 @@ import {
   Settings,
   Users,
   Wallet,
+  WifiOff,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { useOfflineQueue, useOnlineStatus } from "./hooks/offlineHooks";
 import { useActor } from "./hooks/useActor";
 import ConstitutionPage from "./pages/ConstitutionPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -63,6 +66,23 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsVersion, setSettingsVersion] = useState(0);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+
+  const isOnline = useOnlineStatus();
+  const pendingCount = useOfflineQueue();
+  const prevOnlineRef = useRef(isOnline);
+
+  // Show toast when coming back online
+  useEffect(() => {
+    if (!prevOnlineRef.current && isOnline) {
+      toast.success(
+        pendingCount > 0
+          ? "ইন্টারনেট সংযোগ পাওয়া গেছে। ডেটা স্বয়ংক্রিয়ভাবে সিঙ্ক হবে।"
+          : "ইন্টারনেট সংযোগ পুনরায় স্থাপিত হয়েছে।",
+        { duration: 4000 },
+      );
+    }
+    prevOnlineRef.current = isOnline;
+  }, [isOnline, pendingCount]);
 
   const isAdmin = session?.role === "admin" || session?.role === "superadmin";
   const isSuperAdmin = session?.role === "superadmin";
@@ -136,6 +156,30 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Online/Offline status indicator */}
+            {!isOnline && (
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                style={{ background: "#fee2e2", color: "#991b1b" }}
+                data-ocid="nav.offline_state"
+              >
+                <WifiOff size={12} />
+                <span>অফলাইন</span>
+              </div>
+            )}
+            {isOnline && pendingCount > 0 && (
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                style={{ background: "#fff7ed", color: "#9a3412" }}
+                data-ocid="nav.syncing_state"
+              >
+                <span
+                  className="w-2 h-2 rounded-full inline-block"
+                  style={{ background: "#ea580c" }}
+                />
+                <span>সিঙ্ক হচ্ছে...</span>
+              </div>
+            )}
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
@@ -253,8 +297,12 @@ export default function App() {
             defaultTab={financialTab}
           />
         )}
-        {page === "noticeboard" && <NoticeBoardPage isAdmin={isAdmin} />}
-        {page === "resolution" && <ResolutionPadPage isAdmin={isAdmin} />}
+        {page === "noticeboard" && (
+          <NoticeBoardPage actor={actor} isAdmin={isAdmin} />
+        )}
+        {page === "resolution" && (
+          <ResolutionPadPage actor={actor} isAdmin={isAdmin} />
+        )}
         {page === "settings" && isAdmin && (
           <SettingsPage
             isSuperAdmin={isSuperAdmin}

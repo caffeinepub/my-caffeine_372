@@ -65,6 +65,29 @@ actor {
     name : Text;
   };
 
+  type NoticeRecord = {
+    id : Nat;
+    date : Text;
+    noticeNo : Text;
+    title : Text;
+    body : Text;
+    authority : Text;
+    savedAt : Text;
+  };
+
+  type ResolutionRecord = {
+    id : Nat;
+    date : Text;
+    resNo : Text;
+    meetingType : Text;
+    venue : Text;
+    presiding : Text;
+    attendees : Text;
+    resolutions : Text;
+    secretary : Text;
+    savedAt : Text;
+  };
+
   public type UserProfile = {
     name : Text;
   };
@@ -153,6 +176,14 @@ actor {
   // Expense Categories
   var nextCategoryId : Nat = 0;
   let expenseCategories = Map.empty<Nat, ExpenseCategory>();
+
+  // Notices
+  var nextNoticeId : Nat = 0;
+  let noticeRecords = Map.empty<Nat, NoticeRecord>();
+
+  // Resolutions
+  var nextResolutionId : Nat = 0;
+  let resolutionRecords = Map.empty<Nat, ResolutionRecord>();
 
   // ===== User Profile functions =====
 
@@ -421,5 +452,87 @@ actor {
       Runtime.trap("Unauthorized: Only admins can delete expense categories");
     };
     expenseCategories.remove(id);
+  };
+
+  // ===== Notice functions =====
+
+  public query func getAllNotices() : async [NoticeRecord] {
+    noticeRecords.values().toArray();
+  };
+
+  public shared ({ caller }) func addNotice(
+    date : Text,
+    noticeNo : Text,
+    title : Text,
+    body : Text,
+    authority : Text,
+    savedAt : Text,
+  ) : async NoticeRecord {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can add notices");
+    };
+    let record : NoticeRecord = {
+      id = nextNoticeId;
+      date = date;
+      noticeNo = noticeNo;
+      title = title;
+      body = body;
+      authority = authority;
+      savedAt = savedAt;
+    };
+    noticeRecords.add(nextNoticeId, record);
+    nextNoticeId += 1;
+    record;
+  };
+
+  public shared ({ caller }) func deleteNotice(id : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can delete notices");
+    };
+    noticeRecords.remove(id);
+  };
+
+  // ===== Resolution functions =====
+
+  public query func getAllResolutions() : async [ResolutionRecord] {
+    resolutionRecords.values().toArray();
+  };
+
+  public shared ({ caller }) func addResolution(
+    date : Text,
+    resNo : Text,
+    meetingType : Text,
+    venue : Text,
+    presiding : Text,
+    attendees : Text,
+    resolutions : Text,
+    secretary : Text,
+    savedAt : Text,
+  ) : async ResolutionRecord {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can add resolutions");
+    };
+    let record : ResolutionRecord = {
+      id = nextResolutionId;
+      date = date;
+      resNo = resNo;
+      meetingType = meetingType;
+      venue = venue;
+      presiding = presiding;
+      attendees = attendees;
+      resolutions = resolutions;
+      secretary = secretary;
+      savedAt = savedAt;
+    };
+    resolutionRecords.add(nextResolutionId, record);
+    nextResolutionId += 1;
+    record;
+  };
+
+  public shared ({ caller }) func deleteResolution(id : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can delete resolutions");
+    };
+    resolutionRecords.remove(id);
   };
 };
