@@ -44,6 +44,7 @@ import type { backendInterface } from "../backend";
 import {
   buildDocumentHeader,
   buildDocumentWatermark,
+  getDocumentBaseStyles,
   getDocumentFontLink,
 } from "../utils/pdfHeader";
 
@@ -128,11 +129,9 @@ function printReceipt(record: IncomeRecord) {
 <title>টাকা গ্রহণের রসিদ - ${record.serialNumber}</title>
 ${getDocumentFontLink()}
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Noto Sans Bengali', sans-serif; padding: 32px; color: #111; background: #fff; }
+  ${getDocumentBaseStyles()}
   .title { text-align: center; font-size: 22px; font-weight: 800; color: #166534; margin-bottom: 6px; letter-spacing: 0.5px; }
   .subtitle { text-align: center; font-size: 13px; color: #666; margin-bottom: 20px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
   td { padding: 10px 14px; border: 1px solid #d1d5db; font-size: 14px; }
   td:first-child { font-weight: 600; background: #f0fdf4; width: 38%; color: #166534; }
   .amount-row td:last-child { font-size: 18px; font-weight: 800; color: #166534; }
@@ -145,6 +144,7 @@ ${getDocumentFontLink()}
 </head>
 <body>
 ${buildDocumentWatermark(settings.logoUrl)}
+<div class="page">
 ${buildOrgHeader(settings)}
 <div class="title">টাকা গ্রহণের রসিদ</div>
 <div class="subtitle">রসিদ নং: ${record.serialNumber} &nbsp;|&nbsp; তারিখ: ${record.date}</div>
@@ -166,6 +166,8 @@ ${buildOrgHeader(settings)}
 <div class="no-print">
   <button class="print-btn" onclick="window.print()">🖨️ প্রিন্ট / PDF সংরক্ষণ করুন</button>
 </div>
+</div>
+<script>window.onload=function(){setTimeout(function(){window.print();},800);}<\/script>
 </body></html>`);
   win.document.close();
 }
@@ -182,11 +184,9 @@ function printVoucher(record: ExpenseRecord) {
 <title>খরচের ভাউচার - ${record.serialNumber}</title>
 ${getDocumentFontLink()}
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Noto Sans Bengali', sans-serif; padding: 32px; color: #111; background: #fff; }
+  ${getDocumentBaseStyles()}
   .title { text-align: center; font-size: 22px; font-weight: 800; color: #991b1b; margin-bottom: 6px; letter-spacing: 0.5px; }
   .subtitle { text-align: center; font-size: 13px; color: #666; margin-bottom: 20px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
   td { padding: 10px 14px; border: 1px solid #d1d5db; font-size: 14px; }
   td:first-child { font-weight: 600; background: #fff1f2; width: 38%; color: #991b1b; }
   .amount-row td:last-child { font-size: 18px; font-weight: 800; color: #991b1b; }
@@ -199,6 +199,7 @@ ${getDocumentFontLink()}
 </head>
 <body>
 ${buildDocumentWatermark(settings.logoUrl)}
+<div class="page">
 ${buildOrgHeader(settings)}
 <div class="title">খরচের ভাউচার</div>
 <div class="subtitle">ভাউচার নং: ${record.serialNumber} &nbsp;|&nbsp; তারিখ: ${record.date}</div>
@@ -219,6 +220,8 @@ ${buildOrgHeader(settings)}
 <div class="no-print">
   <button class="print-btn" onclick="window.print()">🖨️ প্রিন্ট / PDF সংরক্ষণ করুন</button>
 </div>
+</div>
+<script>window.onload=function(){setTimeout(()=> {window.print();},800);}<\/script>
 </body></html>`);
   win.document.close();
 }

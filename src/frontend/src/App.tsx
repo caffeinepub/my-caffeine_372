@@ -103,6 +103,16 @@ export default function App() {
     setSidebarOpen(false);
   }
 
+  function handleSettingsClick() {
+    setSidebarOpen(false);
+    if (isAdmin) {
+      setPage("settings");
+    } else {
+      toast.info("সেটিং পরিবর্তন করতে এডমিন লগইন করুন।", { duration: 3000 });
+      setLoginModalOpen(true);
+    }
+  }
+
   function handleLogout() {
     logoutAdmin();
     setSession(null);
@@ -112,7 +122,12 @@ export default function App() {
     orgSettings.logoDataUrl ||
     "/assets/generated/apon-foundation-logo-transparent.dim_200x200.png";
 
-  const navItems: { key: Page; label: string; icon: React.ReactNode }[] = [
+  const navItems: {
+    key: Page;
+    label: string;
+    icon: React.ReactNode;
+    onClick?: () => void;
+  }[] = [
     { key: "dashboard", label: "ড্যাশবোর্ড", icon: <Home size={18} /> },
     { key: "members", label: "সদস্য তালিকা", icon: <Users size={18} /> },
     { key: "constitution", label: "গঠনতন্ত্র", icon: <BookOpen size={18} /> },
@@ -133,15 +148,12 @@ export default function App() {
       label: "রিপোর্ট ও এক্সপোর্ট",
       icon: <FileDown size={18} />,
     },
-    ...(isAdmin
-      ? [
-          {
-            key: "settings" as Page,
-            label: "সেটিং",
-            icon: <Settings size={18} />,
-          },
-        ]
-      : []),
+    {
+      key: "settings",
+      label: "সেটিং",
+      icon: <Settings size={18} />,
+      onClick: handleSettingsClick,
+    },
   ];
 
   return (
@@ -264,7 +276,9 @@ export default function App() {
               <button
                 key={item.key}
                 type="button"
-                onClick={() => navigate(item.key)}
+                onClick={() =>
+                  item.onClick ? item.onClick() : navigate(item.key)
+                }
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-left ${
                   page === item.key
                     ? "bg-primary text-primary-foreground"

@@ -6,6 +6,9 @@
  *   Line 3: Slogan — centered, deep red
  *   Line 4: Address — centered, deep purple
  *   Line 5: Email + WhatsApp — centered, deep gray
+ *
+ * All documents: A4 size, 600 DPI print quality, auto-pagination,
+ * consistent header and watermark on every page (brand identity).
  */
 
 export interface PdfHeaderOptions {
@@ -36,11 +39,11 @@ export function buildDocumentHeader(opts: PdfHeaderOptions): string {
   const logoSize = 70;
 
   const logoImg = logoDataUrl
-    ? `<img src="${logoDataUrl}" style="width:${logoSize}px;height:${logoSize}px;object-fit:contain;display:block;" alt="logo" />`
+    ? `<img src="${logoDataUrl}" style="width:${logoSize}px;height:${logoSize}px;object-fit:contain;display:block;image-rendering:high-quality;" alt="logo" />`
     : `<div style="width:${logoSize}px;height:${logoSize}px;background:#166534;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:26px;font-weight:bold;">আ</div>`;
 
   return `
-<div style="padding-bottom:12px;margin-bottom:14px;border-bottom:3px double #166534;">
+<div class="doc-header" style="padding-bottom:12px;margin-bottom:14px;border-bottom:3px double #166534;">
 
   <!-- Arabic text: full-width centered, small font, deep blue -->
   <div style="text-align:center;font-family:'Scheherazade New','Amiri','Noto Naskh Arabic',serif;font-size:13px;color:#1e3a8a;margin-bottom:6px;direction:rtl;unicode-bidi:embed;">بسم الله الرحمن الرحيم</div>
@@ -78,23 +81,145 @@ export function buildDocumentHeader(opts: PdfHeaderOptions): string {
 
 export function buildDocumentWatermark(logoDataUrl?: string): string {
   if (!logoDataUrl) return "";
-  return `<div style="position:fixed;top:62%;left:50%;transform:translate(-50%,-50%);opacity:0.35;z-index:0;pointer-events:none;">
-    <img src="${logoDataUrl}" style="width:300px;height:300px;object-fit:contain;" alt="" />
-  </div>`;
+  // position:fixed ensures watermark appears on EVERY printed page
+  return `
+<div class="doc-watermark" style="
+  position:fixed;
+  top:62%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  opacity:0.35;
+  z-index:0;
+  pointer-events:none;
+  width:300px;
+  height:300px;
+">
+  <img src="${logoDataUrl}" style="width:300px;height:300px;object-fit:contain;image-rendering:high-quality;" alt="" />
+</div>`;
 }
 
 export function getDocumentFontLink(): string {
   return `<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;600;700;800&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">`;
 }
 
+/**
+ * Base styles for ALL Apon Foundation documents.
+ * - A4 size (210mm × 297mm)
+ * - 1-inch (25.4mm) margins all around
+ * - Auto-pagination: content overflows to next page automatically
+ * - Watermark fixed on every page
+ * - High-quality print output
+ */
 export function getDocumentBaseStyles(): string {
   return `
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Hind Siliguri', 'Noto Sans Bengali', Arial, sans-serif; font-size: 13px; color: #222; background: white; }
-    .page { width: 210mm; min-height: 297mm; padding: 10mm 25.4mm 25.4mm; margin: 0 auto; position: relative; }
+
+    body {
+      font-family: 'Hind Siliguri', 'Noto Sans Bengali', Arial, sans-serif;
+      font-size: 13px;
+      color: #222;
+      background: white;
+      /* High quality print */
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      color-adjust: exact;
+    }
+
+    /* A4 page container */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 10mm 25.4mm 25.4mm 25.4mm;
+      margin: 0 auto;
+      position: relative;
+      background: white;
+      /* Prevent content from going outside A4 bounds */
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+    }
+
+    /* Auto-pagination: blocks that should not be split across pages */
+    .no-break {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* Tables: header repeats on every page, rows avoid mid-row breaks */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      page-break-inside: auto;
+    }
+    thead {
+      display: table-header-group; /* Repeats on every printed page */
+    }
+    tfoot {
+      display: table-footer-group;
+    }
+    tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    td, th {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* Content sections */
+    .section-block {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      margin-bottom: 12px;
+    }
+
+    /* Force page break */
+    .page-break {
+      page-break-after: always;
+      break-after: page;
+    }
+
+    /* Watermark: fixed so it appears centered on every printed page */
+    .doc-watermark {
+      position: fixed;
+      top: 62%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.35;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Print-specific rules */
     @media print {
-      @page { size: A4; margin: 0; }
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      /* A4 size with 1-inch margins */
+      @page {
+        size: A4;
+        margin: 25.4mm;
+      }
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color-adjust: exact;
+      }
+      /* Remove page padding since @page margin handles it */
+      .page {
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        min-height: auto;
+      }
+      /* Watermark on every page */
+      .doc-watermark {
+        position: fixed;
+        top: 62%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      /* Header: avoid breaking across pages */
+      .doc-header {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
     }
   `;
 }
@@ -136,7 +261,12 @@ export function buildPrintWatermarkCSS(logoDataUrl?: string): string {
       background-position: center;
     }
     @media print {
-      .doc-watermark { position: fixed; top: 62%; left: 50%; transform: translate(-50%, -50%); }
+      .doc-watermark {
+        position: fixed;
+        top: 62%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
     }
   `;
 }
