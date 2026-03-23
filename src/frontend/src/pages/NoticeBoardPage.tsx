@@ -177,7 +177,7 @@ ${getDocumentFontLink()}
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Noto Sans Bengali',sans-serif; background:#fff; color:#111; }
-.page { width:210mm; min-height:297mm; margin:0 auto; padding:25.4mm 25.4mm; background:#fff; position:relative; }
+.page { width:210mm; min-height:297mm; margin:0 auto; padding:10mm 25.4mm 25.4mm; background:#fff; position:relative; }
 .notice-title { width:100%; text-align:center; margin:18px 0 10px; }
 .notice-title h2 { font-size:20px; font-weight:700; text-decoration:underline; display:inline-block; }
 .notice-meta { display:flex; justify-content:space-between; font-size:12px; color:#555; margin-bottom:12px; }

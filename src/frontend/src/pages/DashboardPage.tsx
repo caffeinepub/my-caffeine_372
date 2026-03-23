@@ -26,7 +26,7 @@ interface Props {
   onNavigate: (page: Page, tab?: string) => void;
 }
 
-export default function DashboardPage({ actor, isAdmin, onNavigate }: Props) {
+export default function DashboardPage({ actor, onNavigate }: Props) {
   const { data: incomeRecords = [] } = useQuery<IncomeRecord[]>({
     queryKey: ["incomeRecords"],
     queryFn: async () => {
@@ -75,11 +75,6 @@ export default function DashboardPage({ actor, isAdmin, onNavigate }: Props) {
         <p className="text-muted-foreground mt-1 text-sm">
           ড্যাশবোর্ডে স্বাগতম — সংগঠনের সামগ্রিক চিত্র
         </p>
-        {!isAdmin && (
-          <p className="mt-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 inline-block">
-            🔒 আপনি অতিথি হিসেবে দেখছেন — তথ্য পরিবর্তন করতে এডমিন লগইন করুন
-          </p>
-        )}
       </div>
 
       {/* Summary Cards */}
@@ -140,44 +135,40 @@ export default function DashboardPage({ actor, isAdmin, onNavigate }: Props) {
           দ্রুত কার্যক্রম
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={() => onNavigate("financial", "income")}
-              className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed transition-all hover:bg-green-50 hover:border-green-500 group"
-              style={{ borderColor: "#16a34a" }}
-              data-ocid="dashboard.income.primary_button"
+          <button
+            type="button"
+            onClick={() => onNavigate("financial", "income")}
+            className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed transition-all hover:bg-green-50 hover:border-green-500 group"
+            style={{ borderColor: "#16a34a" }}
+            data-ocid="dashboard.income.primary_button"
+          >
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl font-bold"
+              style={{ background: "#166534" }}
             >
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl font-bold"
-                style={{ background: "#166534" }}
-              >
-                <Wallet size={22} />
-              </div>
-              <span
-                className="text-sm font-semibold"
-                style={{ color: "#166534" }}
-              >
-                💰 আয় যোগ করুন
-              </span>
-            </button>
-          )}
+              <Wallet size={22} />
+            </div>
+            <span
+              className="text-sm font-semibold"
+              style={{ color: "#166534" }}
+            >
+              💰 আয় যোগ করুন
+            </span>
+          </button>
 
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={() => onNavigate("financial", "expense")}
-              className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed border-red-400 transition-all hover:bg-red-50 hover:border-red-600 group"
-              data-ocid="dashboard.expense.primary_button"
-            >
-              <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center text-white">
-                <ArrowDownCircle size={22} />
-              </div>
-              <span className="text-sm font-semibold text-red-600">
-                💸 ব্যয় যোগ করুন
-              </span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => onNavigate("financial", "expense")}
+            className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed border-red-400 transition-all hover:bg-red-50 hover:border-red-600 group"
+            data-ocid="dashboard.expense.primary_button"
+          >
+            <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center text-white">
+              <ArrowDownCircle size={22} />
+            </div>
+            <span className="text-sm font-semibold text-red-600">
+              💸 ব্যয় যোগ করুন
+            </span>
+          </button>
 
           <button
             type="button"

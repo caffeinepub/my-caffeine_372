@@ -32,6 +32,11 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Council, type CouncilMember, type backendInterface } from "../backend";
 import { loadSettings } from "../store/settingsStore";
+import {
+  buildDocumentHeader,
+  buildDocumentWatermark,
+  getDocumentFontLink,
+} from "../utils/pdfHeader";
 
 const COUNCILS = [
   { role: Council.sadharanParishad, label: "সাধারণ পরিষদ", tab: "sadharan" },
@@ -156,10 +161,6 @@ function generateAdmissionFormHTML(
 ): string {
   const org = loadSettings();
 
-  const logoHtml = org.logoDataUrl
-    ? `<img src="${org.logoDataUrl}" width="65" height="65" style="object-fit:contain;border-radius:4px" />`
-    : `<div style="width:65px;height:65px;background:#e8f5e9;border:2px dashed #1a6b2a;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#1a6b2a">লোগো</div>`;
-
   const photoHtml = photoDataUrl
     ? `<img src="${photoDataUrl}" style="width:100%;height:100%;object-fit:cover" />`
     : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#f5f5f5">
@@ -196,19 +197,12 @@ function generateAdmissionFormHTML(
 <head>
   <meta charset="UTF-8" />
   <title>সদস্যপদ আবেদন ফর্ম - ${member.memberName}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&family=Hind+Siliguri:wght@400;600;700&display=block" rel="stylesheet" />
+  ${getDocumentFontLink()}
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Noto Sans Bengali', 'Hind Siliguri', Arial, sans-serif; background: #fff; color: #222; padding: 24px 30px; max-width: 794px; margin: 0 auto; }
     @page { size: A4; margin: 15mm; }
     @media print { body { padding: 0; max-width: 100%; } .no-print { display: none !important; } }
-    .header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 10px; }
-    .org-name { font-size: 22px; font-weight: 700; line-height: 1.3; }
-    .org-address { font-size: 11px; color: #555; margin-top: 3px; }
-    .org-contact { font-size: 10px; color: #777; margin-top: 2px; }
-    hr { border: none; border-top: 2px solid #1a6b2a; margin: 10px 0 16px; }
     .form-title-wrap { text-align: center; margin-bottom: 20px; }
     .form-title { display: inline-block; font-size: 17px; font-weight: 700; color: #1a6b2a; border: 2px solid #1a6b2a; padding: 6px 28px; border-radius: 4px; letter-spacing: 1px; }
     .form-body { position: relative; }
@@ -224,25 +218,18 @@ function generateAdmissionFormHTML(
   </style>
 </head>
 <body>
-  <!-- Header -->
-  <div class="header">
-    <div>${logoHtml}</div>
-    <div style="flex:1">
-      <div class="org-name">
-        <span style="color:${org.color1}">${org.orgName1}</span><span style="color:${org.color2}"> ${org.orgName2}</span>
-      </div>
-      ${org.tagline ? `<div style="font-size:11px;color:#666;margin-top:1px">${org.tagline}</div>` : ""}
-      <div class="org-address">${org.address}</div>
-      <div class="org-contact">
-        ${org.email ? `✉ ${org.email}` : ""}
-        ${org.email && org.whatsapp ? " &nbsp;|&nbsp; " : ""}
-        ${org.whatsapp ? `📱 ${org.whatsapp}` : ""}
-        ${(org.email || org.whatsapp) && org.website ? " &nbsp;|&nbsp; " : ""}
-        ${org.website ? `🌐 ${org.website}` : ""}
-      </div>
-    </div>
-  </div>
-  <hr />
+  ${buildDocumentWatermark(org.logoDataUrl)}
+  ${buildDocumentHeader({
+    logoDataUrl: org.logoDataUrl,
+    orgName1: org.orgName1 || "আপন",
+    orgName2: org.orgName2 || "ফাউন্ডেশন",
+    tagline: org.tagline || "মানবসেবায় আমরা",
+    address: org.address || "বালীগাঁও, অষ্টগ্রাম, কিশোরগঞ্জ",
+    email: org.email || "aponfoundation.baligaw@gmail.com",
+    whatsapp: org.whatsapp || "+8801608427115",
+    color1: org.color1 || "#166534",
+    color2: org.color2 || "#c2410c",
+  })}
 
   <!-- Form Title -->
   <div class="form-title-wrap">
@@ -327,28 +314,17 @@ function exportPDF(
     })
     .join("");
 
-  const logoImgHtml = orgSettings.logoDataUrl
-    ? `<img src="${orgSettings.logoDataUrl}" width="60" height="60" style="object-fit:contain" />`
-    : "";
-
   const htmlContent = `<!DOCTYPE html>
 <html lang="bn">
 <head>
   <meta charset="UTF-8" />
   <title>${councilLabel} - সদস্য তালিকা</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&family=Hind+Siliguri:wght@400;600;700&display=block" rel="stylesheet" />
+  ${getDocumentFontLink()}
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Noto Sans Bengali', 'Hind Siliguri', Arial, sans-serif; background: #fff; color: #222; padding: 20px 28px; }
     @page { size: A4; margin: 15mm; }
     @media print { body { padding: 0; } .no-print { display: none !important; } }
-    .header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
-    .org-name { font-size: 22px; font-weight: 700; line-height: 1.3; }
-    .org-address { font-size: 11px; color: #555; margin-top: 3px; }
-    .org-contact { font-size: 10px; color: #777; margin-top: 2px; }
-    hr { border: none; border-top: 1.5px solid #ccc; margin: 8px 0 12px; }
     .council-title { text-align: center; font-size: 15px; font-weight: 700; margin-bottom: 14px; color: ${orgSettings.color1}; }
     table { width: 100%; border-collapse: collapse; }
     thead tr { background: ${orgSettings.color1}; color: #fff; }
@@ -359,21 +335,18 @@ function exportPDF(
   </style>
 </head>
 <body>
-  <div class="header">
-    ${logoImgHtml ? `<div>${logoImgHtml}</div>` : ""}
-    <div>
-      <div class="org-name">
-        <span style="color:${orgSettings.color1}">${orgSettings.orgName1}</span><span style="color:${orgSettings.color2}"> ${orgSettings.orgName2}</span>
-      </div>
-      <div class="org-address">${orgSettings.address}</div>
-      <div class="org-contact">
-        ${orgSettings.email ? `ইমেইল: ${orgSettings.email} &nbsp;|&nbsp;` : ""}
-        ${orgSettings.whatsapp ? `হোয়াটসঅ্যাপ: ${orgSettings.whatsapp} &nbsp;|&nbsp;` : ""}
-        ${orgSettings.website ? `ওয়েব: ${orgSettings.website}` : ""}
-      </div>
-    </div>
-  </div>
-  <hr />
+  ${buildDocumentWatermark(orgSettings.logoDataUrl)}
+  ${buildDocumentHeader({
+    logoDataUrl: orgSettings.logoDataUrl,
+    orgName1: orgSettings.orgName1 || "আপন",
+    orgName2: orgSettings.orgName2 || "ফাউন্ডেশন",
+    tagline: orgSettings.tagline || "মানবসেবায় আমরা",
+    address: orgSettings.address || "বালীগাঁও, অষ্টগ্রাম, কিশোরগঞ্জ",
+    email: orgSettings.email || "aponfoundation.baligaw@gmail.com",
+    whatsapp: orgSettings.whatsapp || "+8801608427115",
+    color1: orgSettings.color1 || "#166534",
+    color2: orgSettings.color2 || "#c2410c",
+  })}
   <div class="council-title">${councilLabel} - সদস্য তালিকা</div>
   <table>
     <thead>

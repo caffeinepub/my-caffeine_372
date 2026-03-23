@@ -23,6 +23,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import type { backendInterface } from "../backend";
 import { loadSettings } from "../store/settingsStore";
+import {
+  buildDocumentHeader,
+  buildDocumentWatermark,
+  getDocumentFontLink,
+} from "../utils/pdfHeader";
 
 interface ConstitutionChapter {
   id: bigint;
@@ -223,18 +228,24 @@ export default function ConstitutionPage({ actor, isAdmin }: Props) {
 
   function handleDownloadPDF() {
     const year = new Date().getFullYear();
+    const headOpts = {
+      logoDataUrl: org.logoDataUrl || logoSrc,
+      orgName1: org.orgName1 || "আপন",
+      orgName2: org.orgName2 || "ফাউন্ডেশন",
+      tagline: org.tagline || "মানবসেবায় আমরা",
+      address: org.address || "বালীগাঁও, অষ্টগ্রাম, কিশোরগঞ্জ",
+      email: org.email || "aponfoundation.baligaw@gmail.com",
+      whatsapp: org.whatsapp || "+8801608427115",
+      color1: org.color1 || "#166534",
+      color2: org.color2 || "#c2410c",
+    };
     const chapterPages = chapters
       .map(
         (ch) => `
       <div class="chapter-block">
+        ${buildDocumentWatermark(headOpts.logoDataUrl)}
         <div class="chapter-header">
-          <div class="org-header">
-            <img src="${logoSrc}" class="org-logo" alt="" onerror="this.style.display='none'"/>
-            <div class="org-info">
-              <div class="org-name"><span class="name1">${org.orgName1}</span> <span class="name2">${org.orgName2}</span></div>
-              <div class="org-meta">${org.address} | ইমেইল: ${org.email} | হোয়াটসঅ্যাপ: ${org.whatsapp} | ওয়েব: ${org.website}</div>
-            </div>
-          </div>
+          ${buildDocumentHeader(headOpts)}
           <div class="chapter-badge-row">
             <span class="chapter-badge">অধ্যায় ${String(ch.chapterNumber)}</span>
             <span class="chapter-title">${ch.title}</span>
@@ -251,7 +262,7 @@ export default function ConstitutionPage({ actor, isAdmin }: Props) {
 <head>
 <meta charset="UTF-8"/>
 <title>গঠনতন্ত্র — ${org.orgName1} ${org.orgName2}</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+${getDocumentFontLink()}
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
 body { font-family:'Noto Sans Bengali',sans-serif; background:#fff; }
@@ -322,12 +333,7 @@ body { font-family:'Noto Sans Bengali',sans-serif; background:#fff; }
   page-break-after:always;
   page-break-inside:auto;
 }
-.org-header { display:flex; align-items:center; gap:14px; border-bottom:3px double #166534; padding-bottom:10px; margin-bottom:14px; }
-.org-logo { width:56px; height:56px; object-fit:contain; }
-.org-name { font-size:20px; font-weight:700; }
-.name1 { color:${org.color1}; }
-.name2 { color:${org.color2}; }
-.org-meta { font-size:11px; color:#444; margin-top:3px; line-height:1.6; }
+/* org-header replaced by shared buildDocumentHeader */
 .chapter-badge-row { display:flex; align-items:center; gap:12px; margin:18px 0 10px; }
 .chapter-badge { background:#166534; color:#fff; font-size:12px; font-weight:700; padding:4px 14px; border-radius:20px; white-space:nowrap; }
 .chapter-title { font-size:17px; font-weight:700; color:#166534; }

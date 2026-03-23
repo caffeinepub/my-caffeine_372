@@ -78,7 +78,7 @@ export function buildDocumentHeader(opts: PdfHeaderOptions): string {
 
 export function buildDocumentWatermark(logoDataUrl?: string): string {
   if (!logoDataUrl) return "";
-  return `<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.35;z-index:0;pointer-events:none;">
+  return `<div style="position:fixed;top:62%;left:50%;transform:translate(-50%,-50%);opacity:0.35;z-index:0;pointer-events:none;">
     <img src="${logoDataUrl}" style="width:300px;height:300px;object-fit:contain;" alt="" />
   </div>`;
 }
@@ -91,10 +91,52 @@ export function getDocumentBaseStyles(): string {
   return `
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Hind Siliguri', 'Noto Sans Bengali', Arial, sans-serif; font-size: 13px; color: #222; background: white; }
-    .page { width: 210mm; min-height: 297mm; padding: 25.4mm 25.4mm 25.4mm; margin: 0 auto; position: relative; }
+    .page { width: 210mm; min-height: 297mm; padding: 10mm 25.4mm 25.4mm; margin: 0 auto; position: relative; }
     @media print {
       @page { size: A4; margin: 0; }
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  `;
+}
+
+export function loadOrgSettingsForPDF(): PdfHeaderOptions {
+  let raw: any = {};
+  try {
+    raw = JSON.parse(localStorage.getItem("orgSettings") || "{}");
+  } catch {}
+  return {
+    logoDataUrl: raw.logoDataUrl || raw.logoUrl || "",
+    orgName1: raw.orgName1 || "আপন",
+    orgName2: raw.orgName2 || "ফাউন্ডেশন",
+    tagline: raw.tagline || "মানবসেবায় আমরা",
+    address: raw.address || "বালীগাঁও, অষ্টগ্রাম, কিশোরগঞ্জ",
+    email: raw.email || "aponfoundation.baligaw@gmail.com",
+    whatsapp: raw.whatsapp || "+8801608427115",
+    color1: raw.color1 || "#166534",
+    color2: raw.color2 || "#c2410c",
+  };
+}
+
+export function buildPrintWatermarkCSS(logoDataUrl?: string): string {
+  if (!logoDataUrl) return "";
+  return `
+    .doc-watermark {
+      position: fixed;
+      top: 62%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.35;
+      z-index: 0;
+      pointer-events: none;
+      width: 300px;
+      height: 300px;
+      background-image: url('${logoDataUrl}');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+    @media print {
+      .doc-watermark { position: fixed; top: 62%; left: 50%; transform: translate(-50%, -50%); }
     }
   `;
 }

@@ -90,6 +90,8 @@ interface OrgSettings {
   whatsapp?: string;
   website?: string;
   logoUrl?: string;
+  color1?: string;
+  color2?: string;
 }
 
 function getOrgSettings(): OrgSettings {
@@ -109,6 +111,8 @@ function buildOrgHeader(settings: OrgSettings): string {
     address: settings.address || "বালীগাঁও, অষ্টগ্রাম, কিশোরগঞ্জ",
     email: settings.email || "aponfoundation.baligaw@gmail.com",
     whatsapp: settings.whatsapp || "+8801608427115",
+    color1: settings.color1 || "#166534",
+    color2: settings.color2 || "#c2410c",
   });
 }
 

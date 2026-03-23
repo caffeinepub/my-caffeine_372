@@ -202,7 +202,7 @@ ${getDocumentFontLink()}
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Noto Sans Bengali',sans-serif; background:#fff; color:#111; }
-.page { width:210mm; min-height:297mm; margin:0 auto; padding:25.4mm 25.4mm; background:#fff; position:relative; }
+.page { width:210mm; min-height:297mm; margin:0 auto; padding:10mm 25.4mm 25.4mm; background:#fff; position:relative; }
 h2 { width:100%; text-align:center; font-size:18px; font-weight:700; text-decoration:underline; margin:16px 0 12px; display:block; }
 table { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:16px; }
 td { padding:5px 8px; border:1px solid #bbb; }
