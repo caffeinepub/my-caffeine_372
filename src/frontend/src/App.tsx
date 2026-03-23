@@ -12,9 +12,12 @@ import {
 } from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/sonner";
 import {
+  ArrowLeft,
   Bell,
   BookOpen,
   ClipboardList,
+  FileDown,
+  GitBranch,
   Home,
   Lock,
   Menu,
@@ -29,10 +32,12 @@ import { useOfflineQueue, useOnlineStatus } from "./hooks/offlineHooks";
 import { useActor } from "./hooks/useActor";
 import ConstitutionPage from "./pages/ConstitutionPage";
 import DashboardPage from "./pages/DashboardPage";
+import FamilyTreePage from "./pages/FamilyTreePage";
 import FinancialPage from "./pages/FinancialPage";
 import LoginPage from "./pages/LoginPage";
 import MembersPage from "./pages/MembersPage";
 import NoticeBoardPage from "./pages/NoticeBoardPage";
+import ReportsPage from "./pages/ReportsPage";
 import ResolutionPadPage from "./pages/ResolutionPadPage";
 import SettingsPage from "./pages/SettingsPage";
 import {
@@ -52,7 +57,9 @@ export type Page =
   | "constitution"
   | "financial"
   | "noticeboard"
-  | "resolution";
+  | "resolution"
+  | "familytree"
+  | "reports";
 
 export default function App() {
   const { actor } = useActor();
@@ -115,6 +122,16 @@ export default function App() {
       key: "resolution",
       label: "রেজুলেশন প্যাড",
       icon: <ClipboardList size={18} />,
+    },
+    {
+      key: "familytree",
+      label: "বংশপরম্পরা চার্ট",
+      icon: <GitBranch size={18} />,
+    },
+    {
+      key: "reports",
+      label: "রিপোর্ট ও এক্সপোর্ট",
+      icon: <FileDown size={18} />,
     },
     ...(isAdmin
       ? [
@@ -279,6 +296,22 @@ export default function App() {
       </Sheet>
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6">
+        {/* Back button — shown on all pages except dashboard */}
+        {page !== "dashboard" && (
+          <div className="mb-4 no-print">
+            <button
+              type="button"
+              onClick={() => navigate("dashboard")}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-border bg-white hover:bg-secondary transition-colors shadow-sm"
+              style={{ color: "#166534" }}
+              data-ocid="nav.back.button"
+            >
+              <ArrowLeft size={16} />
+              ড্যাশবোর্ডে ফিরুন
+            </button>
+          </div>
+        )}
+
         {page === "dashboard" && (
           <DashboardPage
             actor={actor}
@@ -303,6 +336,8 @@ export default function App() {
         {page === "resolution" && (
           <ResolutionPadPage actor={actor} isAdmin={isAdmin} />
         )}
+        {page === "familytree" && <FamilyTreePage isAdmin={isAdmin} />}
+        {page === "reports" && <ReportsPage actor={actor} />}
         {page === "settings" && isAdmin && (
           <SettingsPage
             isSuperAdmin={isSuperAdmin}

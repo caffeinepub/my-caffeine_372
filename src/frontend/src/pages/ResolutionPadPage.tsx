@@ -21,6 +21,11 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { loadSettings } from "../store/settingsStore";
+import {
+  buildDocumentHeader,
+  buildDocumentWatermark,
+  getDocumentFontLink,
+} from "../utils/pdfHeader";
 
 const BENGALI_MONTHS = [
   "জানুয়ারি",
@@ -193,17 +198,11 @@ export default function ResolutionPadPage({ actor, isAdmin }: Props) {
 <head>
 <meta charset="UTF-8"/>
 <title>রেজুলেশন</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet"/>
+${getDocumentFontLink()}
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Noto Sans Bengali',sans-serif; background:#fff; color:#111; }
-.page { width:210mm; min-height:297mm; margin:0 auto; padding:18mm 20mm; background:#fff; position:relative; }
-.org-header { display:flex; align-items:center; gap:16px; border-bottom:3px double #166534; padding-bottom:12px; margin-bottom:14px; }
-.org-logo { width:60px; height:60px; object-fit:contain; }
-.org-name { font-size:22px; font-weight:700; }
-.org-name-1 { color:${org.color1}; }
-.org-name-2 { color:${org.color2}; }
-.org-meta { font-size:11px; color:#444; margin-top:3px; line-height:1.7; }
+.page { width:210mm; min-height:297mm; margin:0 auto; padding:25.4mm 25.4mm; background:#fff; position:relative; }
 h2 { width:100%; text-align:center; font-size:18px; font-weight:700; text-decoration:underline; margin:16px 0 12px; display:block; }
 table { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:16px; }
 td { padding:5px 8px; border:1px solid #bbb; }
@@ -219,13 +218,18 @@ td:first-child { font-weight:600; width:40%; background:#f7fdf7; }
 </head>
 <body>
 <div class="page">
-  <div class="org-header">
-    <img src="${logoSrc}" class="org-logo" alt="" onerror="this.style.display='none'"/>
-    <div>
-      <div class="org-name"><span class="org-name-1">${org.orgName1}</span> <span class="org-name-2">${org.orgName2}</span></div>
-      <div class="org-meta">${org.address} | ইমেইল: ${org.email} | হোয়াটসঅ্যাপ: ${org.whatsapp} | ওয়েব: ${org.website}</div>
-    </div>
-  </div>
+  ${buildDocumentHeader({
+    logoDataUrl: org.logoDataUrl,
+    orgName1: org.orgName1,
+    orgName2: org.orgName2,
+    tagline: org.tagline,
+    address: org.address,
+    email: org.email,
+    whatsapp: org.whatsapp,
+    color1: org.color1,
+    color2: org.color2,
+  })}
+  ${buildDocumentWatermark(org.logoDataUrl)}
   <h2>সভার কার্যবিবরণী / রেজুলেশন</h2>
   <table>
     <tr><td>রেজুলেশন নং</td><td>${rn || "—"}</td></tr>

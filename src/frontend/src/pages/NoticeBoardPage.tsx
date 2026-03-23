@@ -14,6 +14,11 @@ import { Bell, Download, Eye, Printer, Save, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { loadSettings } from "../store/settingsStore";
+import {
+  buildDocumentHeader,
+  buildDocumentWatermark,
+  getDocumentFontLink,
+} from "../utils/pdfHeader";
 
 const BENGALI_MONTHS = [
   "জানুয়ারি",
@@ -168,17 +173,11 @@ export default function NoticeBoardPage({ actor, isAdmin }: Props) {
 <head>
 <meta charset="UTF-8"/>
 <title>নোটিশ</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet"/>
+${getDocumentFontLink()}
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Noto Sans Bengali',sans-serif; background:#fff; color:#111; }
-.page { width:210mm; min-height:297mm; margin:0 auto; padding:18mm 20mm; background:#fff; position:relative; }
-.org-header { display:flex; align-items:center; gap:16px; border-bottom:3px double #166534; padding-bottom:12px; margin-bottom:14px; }
-.org-logo { width:60px; height:60px; object-fit:contain; }
-.org-name { font-size:22px; font-weight:700; }
-.org-name-1 { color:${org.color1}; }
-.org-name-2 { color:${org.color2}; }
-.org-meta { font-size:11px; color:#444; margin-top:3px; line-height:1.7; }
+.page { width:210mm; min-height:297mm; margin:0 auto; padding:25.4mm 25.4mm; background:#fff; position:relative; }
 .notice-title { width:100%; text-align:center; margin:18px 0 10px; }
 .notice-title h2 { font-size:20px; font-weight:700; text-decoration:underline; display:inline-block; }
 .notice-meta { display:flex; justify-content:space-between; font-size:12px; color:#555; margin-bottom:12px; }
@@ -192,13 +191,18 @@ body { font-family:'Noto Sans Bengali',sans-serif; background:#fff; color:#111; 
 </head>
 <body>
 <div class="page" style="min-height:297mm;">
-  <div class="org-header">
-    <img src="${logoSrc}" class="org-logo" alt="" onerror="this.style.display='none'"/>
-    <div class="org-title">
-      <div class="org-name"><span class="org-name-1">${org.orgName1}</span> <span class="org-name-2">${org.orgName2}</span></div>
-      <div class="org-meta">${org.address} | ইমেইল: ${org.email} | হোয়াটসঅ্যাপ: ${org.whatsapp} | ওয়েব: ${org.website}</div>
-    </div>
-  </div>
+  ${buildDocumentHeader({
+    logoDataUrl: org.logoDataUrl,
+    orgName1: org.orgName1,
+    orgName2: org.orgName2,
+    tagline: org.tagline,
+    address: org.address,
+    email: org.email,
+    whatsapp: org.whatsapp,
+    color1: org.color1,
+    color2: org.color2,
+  })}
+  ${buildDocumentWatermark(org.logoDataUrl)}
   <div class="notice-title"><h2>নোটিশ</h2></div>
   <div class="notice-meta"><span>নোটিশ নং: ${nn || "—"}</span><span>তারিখ: ${formatDate(d)}</span></div>
   <div class="notice-heading">${t}</div>

@@ -41,6 +41,11 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import type { backendInterface } from "../backend";
+import {
+  buildDocumentHeader,
+  buildDocumentWatermark,
+  getDocumentFontLink,
+} from "../utils/pdfHeader";
 
 interface IncomeRecord {
   id: bigint;
@@ -96,24 +101,15 @@ function getOrgSettings(): OrgSettings {
 }
 
 function buildOrgHeader(settings: OrgSettings): string {
-  const logo = settings.logoUrl
-    ? `<img src="${settings.logoUrl}" style="height:70px;width:auto;object-fit:contain;" alt="logo" />`
-    : `<div style="width:70px;height:70px;background:#166534;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:bold;">আ</div>`;
-  const name = settings.orgName || "আপন ফাউন্ডেশন";
-  const lines: string[] = [];
-  if (settings.address) lines.push(`ঠিকানা: ${settings.address}`);
-  if (settings.email) lines.push(`ইমেইল: ${settings.email}`);
-  if (settings.whatsapp) lines.push(`WhatsApp: ${settings.whatsapp}`);
-  if (settings.website) lines.push(`ওয়েবসাইট: ${settings.website}`);
-  return `
-    <div style="display:flex;align-items:center;gap:20px;border:2px solid #166534;border-radius:8px;padding:14px 20px;margin-bottom:24px;">
-      ${logo}
-      <div style="flex:1;">
-        <h1 style="margin:0 0 4px;font-size:26px;font-weight:800;color:#166534;">${name}</h1>
-        ${lines.map((l) => `<p style="margin:2px 0;font-size:13px;color:#444;">${l}</p>`).join("")}
-      </div>
-    </div>
-  `;
+  return buildDocumentHeader({
+    logoDataUrl: settings.logoUrl,
+    orgName1: "আপন",
+    orgName2: "ফাউন্ডেশন",
+    tagline: "মানবসেবায় আমরা",
+    address: settings.address || "বালীগাঁও, অষ্টগ্রাম, কিশোরগঞ্জ",
+    email: settings.email || "aponfoundation.baligaw@gmail.com",
+    whatsapp: settings.whatsapp || "+8801608427115",
+  });
 }
 
 function printReceipt(record: IncomeRecord) {
@@ -126,8 +122,7 @@ function printReceipt(record: IncomeRecord) {
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>টাকা গ্রহণের রসিদ - ${record.serialNumber}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700;800&display=swap" rel="stylesheet" />
+${getDocumentFontLink()}
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Noto Sans Bengali', sans-serif; padding: 32px; color: #111; background: #fff; }
@@ -145,6 +140,7 @@ function printReceipt(record: IncomeRecord) {
 </style>
 </head>
 <body>
+${buildDocumentWatermark(settings.logoUrl)}
 ${buildOrgHeader(settings)}
 <div class="title">টাকা গ্রহণের রসিদ</div>
 <div class="subtitle">রসিদ নং: ${record.serialNumber} &nbsp;|&nbsp; তারিখ: ${record.date}</div>
@@ -180,8 +176,7 @@ function printVoucher(record: ExpenseRecord) {
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>খরচের ভাউচার - ${record.serialNumber}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700;800&display=swap" rel="stylesheet" />
+${getDocumentFontLink()}
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Noto Sans Bengali', sans-serif; padding: 32px; color: #111; background: #fff; }
@@ -199,6 +194,7 @@ function printVoucher(record: ExpenseRecord) {
 </style>
 </head>
 <body>
+${buildDocumentWatermark(settings.logoUrl)}
 ${buildOrgHeader(settings)}
 <div class="title">খরচের ভাউচার</div>
 <div class="subtitle">ভাউচার নং: ${record.serialNumber} &nbsp;|&nbsp; তারিখ: ${record.date}</div>
