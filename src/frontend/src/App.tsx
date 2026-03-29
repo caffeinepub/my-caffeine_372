@@ -24,6 +24,7 @@ import {
   Menu,
   Search,
   Settings,
+  Share2,
   Users,
   Wallet,
   WifiOff,
@@ -46,6 +47,7 @@ import NoticeBoardPage from "./pages/NoticeBoardPage";
 import ReportsPage from "./pages/ReportsPage";
 import ResolutionPadPage from "./pages/ResolutionPadPage";
 import SettingsPage from "./pages/SettingsPage";
+import SocialMediaPostPage from "./pages/SocialMediaPostPage";
 import {
   type AuthSession,
   getSession,
@@ -67,7 +69,8 @@ export type Page =
   | "resolution"
   | "familytree"
   | "reports"
-  | "blooddonor";
+  | "blooddonor"
+  | "socialmedia";
 
 const GOLD = "#D4AF37";
 const GOLD_DARK = "#B8960C";
@@ -188,6 +191,11 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
           icon: <GitBranch size={18} />,
         },
         { key: "blooddonor", label: "রক্তদাতা গ্রুপ", icon: <Droplets size={18} /> },
+        {
+          key: "socialmedia",
+          label: "সোশ্যাল মিডিয়া পোস্ট",
+          icon: <Share2 size={18} />,
+        },
       ],
     },
     {
@@ -646,6 +654,7 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
         )}
         {page === "familytree" && <FamilyTreePage isAdmin={isAdmin} />}
         {page === "reports" && <ReportsPage actor={actor} />}
+        {page === "socialmedia" && <SocialMediaPostPage />}
         {page === "blooddonor" && (
           <BloodDonorPage actor={actor} isAdmin={isAdmin} />
         )}
