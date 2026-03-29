@@ -32,6 +32,8 @@ import { toast } from "sonner";
 import { useOfflineQueue, useOnlineStatus } from "./hooks/offlineHooks";
 import { useActor } from "./hooks/useActor";
 import BloodDonorPage from "./pages/BloodDonorPage";
+import BloodDonorSearchPage from "./pages/BloodDonorSearchPage";
+import BloodSearchPublicPage from "./pages/BloodSearchPublicPage";
 import ConstitutionPage from "./pages/ConstitutionPage";
 import DashboardPage from "./pages/DashboardPage";
 import FamilyTreePage from "./pages/FamilyTreePage";
@@ -49,6 +51,7 @@ import {
   logoutAdmin,
 } from "./store/adminAuthStore";
 import { loadSettings } from "./store/settingsStore";
+import { getUrlParameter } from "./utils/urlParams";
 
 initAdminStore();
 
@@ -62,11 +65,9 @@ export type Page =
   | "resolution"
   | "familytree"
   | "reports"
-  | "blooddonor"
-  | "blooddonorinfo";
+  | "blooddonor";
 
-export default function App() {
-  const { actor } = useActor();
+function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
   const [session, setSession] = useState<AuthSession | null>(() =>
     getSession(),
   );
@@ -82,7 +83,6 @@ export default function App() {
   const pendingCount = useOfflineQueue();
   const prevOnlineRef = useRef(isOnline);
 
-  // Show toast when coming back online
   useEffect(() => {
     if (!prevOnlineRef.current && isOnline) {
       toast.success(
@@ -158,11 +158,6 @@ export default function App() {
       icon: <Droplets size={18} />,
     },
     {
-      key: "blooddonorinfo",
-      label: "রক্তদাতা তথ্য",
-      icon: <Droplets size={18} />,
-    },
-    {
       key: "settings",
       label: "সেটিং",
       icon: <Settings size={18} />,
@@ -172,7 +167,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <header className="bg-white border-b border-border shadow-sm no-print">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-shrink-0">
@@ -199,7 +193,6 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {/* Online/Offline status indicator */}
             {!isOnline && (
               <div
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
@@ -274,7 +267,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* Sidebar Sheet */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="w-72 p-0" data-ocid="nav.sheet">
           <SheetHeader className="p-4 border-b">
@@ -324,7 +316,6 @@ export default function App() {
       </Sheet>
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6">
-        {/* Back button — shown on all pages except dashboard */}
         {page !== "dashboard" && (
           <div className="mb-4 no-print">
             <button
@@ -369,9 +360,6 @@ export default function App() {
         {page === "blooddonor" && (
           <BloodDonorPage actor={actor} isAdmin={isAdmin} />
         )}
-        {page === "blooddonorinfo" && (
-          <BloodDonorPage actor={actor} isAdmin={isAdmin} defaultTab="donors" />
-        )}
         {page === "settings" && isAdmin && (
           <SettingsPage
             isSuperAdmin={isSuperAdmin}
@@ -397,7 +385,6 @@ export default function App() {
         </p>
       </footer>
 
-      {/* Login Modal */}
       <Dialog open={loginModalOpen} onOpenChange={setLoginModalOpen}>
         <DialogContent
           className="max-w-md p-0 overflow-hidden"
@@ -419,4 +406,19 @@ export default function App() {
       <Toaster />
     </div>
   );
+}
+
+export default function App() {
+  const { actor } = useActor();
+  const viewParam = getUrlParameter("view");
+
+  if (viewParam === "rokto-onusondhan") {
+    return <BloodDonorSearchPage actor={actor} />;
+  }
+
+  if (viewParam === "blood-search") {
+    return <BloodSearchPublicPage actor={actor} />;
+  }
+
+  return <MainApp actor={actor} />;
 }
