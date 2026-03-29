@@ -16,6 +16,7 @@ import {
   Bell,
   BookOpen,
   ClipboardList,
+  Droplets,
   FileDown,
   GitBranch,
   Home,
@@ -30,6 +31,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useOfflineQueue, useOnlineStatus } from "./hooks/offlineHooks";
 import { useActor } from "./hooks/useActor";
+import BloodDonorPage from "./pages/BloodDonorPage";
 import ConstitutionPage from "./pages/ConstitutionPage";
 import DashboardPage from "./pages/DashboardPage";
 import FamilyTreePage from "./pages/FamilyTreePage";
@@ -59,7 +61,8 @@ export type Page =
   | "noticeboard"
   | "resolution"
   | "familytree"
-  | "reports";
+  | "reports"
+  | "blooddonor";
 
 export default function App() {
   const { actor } = useActor();
@@ -147,6 +150,11 @@ export default function App() {
       key: "reports",
       label: "রিপোর্ট ও এক্সপোর্ট",
       icon: <FileDown size={18} />,
+    },
+    {
+      key: "blooddonor",
+      label: "রক্তদাতা গ্রুপ",
+      icon: <Droplets size={18} />,
     },
     {
       key: "settings",
@@ -352,6 +360,9 @@ export default function App() {
         )}
         {page === "familytree" && <FamilyTreePage isAdmin={isAdmin} />}
         {page === "reports" && <ReportsPage actor={actor} />}
+        {page === "blooddonor" && (
+          <BloodDonorPage actor={actor} isAdmin={isAdmin} />
+        )}
         {page === "settings" && isAdmin && (
           <SettingsPage
             isSuperAdmin={isSuperAdmin}

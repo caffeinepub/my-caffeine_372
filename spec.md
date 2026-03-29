@@ -1,31 +1,36 @@
-# আপন ফাউন্ডেশন
+# রক্তদাতা গ্রুপ - Apon Foundation App
 
 ## Current State
-App uses Internet Identity (ICP) for login. Admin role is determined by backend `getCallerUserRole()`. Settings page has an 'অ্যাডমিন তথ্য' tab that only shows instructions. No email/password-based auth exists.
+The app has a sidebar menu with: ড্যাশবোর্ড, সদস্য তালিকা, গঠনতন্ত্র, আর্থিক ব্যবস্থাপনা, নোটিশ বোর্ড, রেজুলেশন প্যাড, বংশপরম্পরা চার্ট, রিপোর্ট ও এক্সপোর্ট, and সেটিং.
+
+CouncilMember type has: id, memberName, fatherName, mobile, bloodGroup, currentAddress, permanentAddress, council, designation, email, serialNumber.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Local email/password authentication system stored in localStorage
-- `adminAuthStore.ts`: stores super admin credentials and list of regular admins (email + hashed password + role: 'superadmin'|'admin')
-- On first run, default super admin: email `admin@aponfoundation.org`, password `admin123` — user prompted to change on first login
-- Login page with email + password fields (replace Internet Identity login)
-- Settings page new tab: "এডমিন ব্যবস্থাপনা" with two sections:
-  1. সুপার এডমিন একাউন্ট — change super admin email and password
-  2. এডমিন তালিকা — add new admins (enter email + create password), view list, delete admins
-- After login, header shows logged-in user's email and role badge (সুপার এডমিন / এডমিন)
-- Logout clears local auth session
+- New menu option "রক্তদাতা গ্রুপ" (with blood drop icon) in the sidebar
+- New page `BloodDonorPage` with two tabs:
+  1. **রক্তদাতা তথ্য** - Shows all blood donors (foundation members auto-included based on registration data + external registrants)
+  2. **রক্ত অনুসন্ধান** - Search/filter donors by blood group
+- External registration form accessible via a shareable link/route `/blood-register` — non-members can fill in name, father's name, mobile, address, blood group to join the donor group
+- External blood donors stored separately in ICP canister (new `addBloodDonor`/`getBloodDonors` calls) or localStorage as fallback
+- Search and filter by blood group (A+, A-, B+, B-, AB+, AB-, O+, O-)
+- Share button per donor card that opens Web Share API or copies formatted text
+- PDF export of donor list with standard A4 header/watermark
 
 ### Modify
-- `LoginPage.tsx`: replace Internet Identity button with email + password form; show validation errors; password visibility toggle
-- `App.tsx`: use local auth state instead of `useInternetIdentity`; `isAdmin` derived from local auth role; keep actor/ICP connection in background silently
-- `SettingsPage.tsx`: add new tab "এডমিন ব্যবস্থাপনা" (only visible when logged in as super admin)
+- `App.tsx`: add `"blooddonor"` to Page type, add menu item, add route rendering
 
 ### Remove
-- Internet Identity login button from login page (keep hook internally for actor if needed)
+- Nothing removed
 
 ## Implementation Plan
-1. Create `src/frontend/src/store/adminAuthStore.ts` — CRUD for super admin + admin accounts in localStorage, login/logout session
-2. Update `LoginPage.tsx` — email/password form, validation, login handler
-3. Update `App.tsx` — use adminAuthStore for auth state, pass isAdmin/isSuperAdmin to pages
-4. Update `SettingsPage.tsx` — add admin management tab with change credentials + add/remove admins (super admin only)
+1. Create `src/frontend/src/pages/BloodDonorPage.tsx` with:
+   - Two views: donor list (all members + external) and blood search
+   - External registration form (inline modal or separate route)
+   - Blood group filter/search
+   - Share button using navigator.share or clipboard copy
+   - PDF export using existing shared header pattern
+2. Store external donors in localStorage (no new canister changes needed for now)
+3. Foundation members auto-appear by pulling from `actor.getAllMembers()`
+4. Update `App.tsx`: add page key, import, menu item, render
