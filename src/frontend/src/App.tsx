@@ -22,6 +22,7 @@ import {
   Home,
   Lock,
   Menu,
+  Search,
   Settings,
   Users,
   Wallet,
@@ -32,6 +33,7 @@ import { toast } from "sonner";
 import { useOfflineQueue, useOnlineStatus } from "./hooks/offlineHooks";
 import { useActor } from "./hooks/useActor";
 import BloodDonorPage from "./pages/BloodDonorPage";
+import BloodDonorRegisterPublicPage from "./pages/BloodDonorRegisterPublicPage";
 import BloodDonorSearchPage from "./pages/BloodDonorSearchPage";
 import BloodSearchPublicPage from "./pages/BloodSearchPublicPage";
 import ConstitutionPage from "./pages/ConstitutionPage";
@@ -67,6 +69,14 @@ export type Page =
   | "reports"
   | "blooddonor";
 
+const GOLD = "#D4AF37";
+const GOLD_DARK = "#B8960C";
+const DARK_GREEN = "#0f2d1a";
+
+const sidebarFont: React.CSSProperties = {
+  fontFamily: "'Hind Siliguri', sans-serif",
+};
+
 function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
   const [session, setSession] = useState<AuthSession | null>(() =>
     getSession(),
@@ -78,6 +88,7 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsVersion, setSettingsVersion] = useState(0);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [menuSearch, setMenuSearch] = useState("");
 
   const isOnline = useOnlineStatus();
   const pendingCount = useOfflineQueue();
@@ -126,48 +137,86 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
     orgSettings.logoDataUrl ||
     "/assets/generated/apon-foundation-logo-transparent.dim_200x200.png";
 
-  const navItems: {
+  type NavItem = {
     key: Page;
     label: string;
     icon: React.ReactNode;
     onClick?: () => void;
-  }[] = [
-    { key: "dashboard", label: "ড্যাশবোর্ড", icon: <Home size={18} /> },
-    { key: "members", label: "সদস্য তালিকা", icon: <Users size={18} /> },
-    { key: "constitution", label: "গঠনতন্ত্র", icon: <BookOpen size={18} /> },
-    { key: "financial", label: "আর্থিক ব্যবস্থাপনা", icon: <Wallet size={18} /> },
-    { key: "noticeboard", label: "নোটিশ বোর্ড", icon: <Bell size={18} /> },
+  };
+
+  type NavGroup = {
+    title: string;
+    items: NavItem[];
+  };
+
+  const navGroups: NavGroup[] = [
     {
-      key: "resolution",
-      label: "রেজুলেশন প্যাড",
-      icon: <ClipboardList size={18} />,
+      title: "প্রশাসনিক",
+      items: [
+        { key: "dashboard", label: "ড্যাশবোর্ড", icon: <Home size={18} /> },
+        { key: "members", label: "সদস্য তালিকা", icon: <Users size={18} /> },
+        { key: "constitution", label: "গঠনতন্ত্র", icon: <BookOpen size={18} /> },
+        {
+          key: "financial",
+          label: "আর্থিক ব্যবস্থাপনা",
+          icon: <Wallet size={18} />,
+        },
+      ],
     },
     {
-      key: "familytree",
-      label: "বংশপরম্পরা চার্ট",
-      icon: <GitBranch size={18} />,
+      title: "তথ্য ও রিপোর্ট",
+      items: [
+        { key: "noticeboard", label: "নোটিশ বোর্ড", icon: <Bell size={18} /> },
+        {
+          key: "resolution",
+          label: "রেজুলেশন প্যাড",
+          icon: <ClipboardList size={18} />,
+        },
+        {
+          key: "reports",
+          label: "রিপোর্ট ও এক্সপোর্ট",
+          icon: <FileDown size={18} />,
+        },
+      ],
     },
     {
-      key: "reports",
-      label: "রিপোর্ট ও এক্সপোর্ট",
-      icon: <FileDown size={18} />,
+      title: "বিশেষ ফিচার",
+      items: [
+        {
+          key: "familytree",
+          label: "বংশপরম্পরা চার্ট",
+          icon: <GitBranch size={18} />,
+        },
+        { key: "blooddonor", label: "রক্তদাতা গ্রুপ", icon: <Droplets size={18} /> },
+      ],
     },
     {
-      key: "blooddonor",
-      label: "রক্তদাতা গ্রুপ",
-      icon: <Droplets size={18} />,
-    },
-    {
-      key: "settings",
-      label: "সেটিং",
-      icon: <Settings size={18} />,
-      onClick: handleSettingsClick,
+      title: "সেটিংস",
+      items: [
+        {
+          key: "settings",
+          label: "সেটিং",
+          icon: <Settings size={18} />,
+          onClick: handleSettingsClick,
+        },
+      ],
     },
   ];
 
+  const searchLower = menuSearch.toLowerCase();
+  const filteredGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) => searchLower === "" || item.label.includes(menuSearch),
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="bg-white border-b border-border shadow-sm no-print">
+      {/* Sticky Header */}
+      <header className="bg-white border-b border-border shadow-sm no-print sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-shrink-0">
             <img
@@ -216,14 +265,20 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
                 <span>সিঙ্ক হচ্ছে...</span>
               </div>
             )}
+            {/* Hamburger - icon only, green theme */}
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border border-border hover:bg-secondary transition-colors"
+              className="flex items-center justify-center w-10 h-10 rounded-lg transition-all"
+              style={{
+                background: "linear-gradient(135deg, #1a4d2e 0%, #0f2d1a 100%)",
+                color: GOLD,
+                boxShadow: "0 2px 8px rgba(15,45,26,0.3)",
+              }}
               data-ocid="nav.menu.button"
+              aria-label="মেনু খুলুন"
             >
-              <Menu size={18} />
-              <span>মেনু</span>
+              <Menu size={20} />
             </button>
             {session ? (
               <div className="flex items-center gap-2 text-sm flex-shrink-0">
@@ -267,49 +322,242 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
         </div>
       </header>
 
-      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="w-72 p-0" data-ocid="nav.sheet">
-          <SheetHeader className="p-4 border-b">
-            <SheetTitle
-              className="text-left text-base font-bold"
-              style={{ color: "#166534" }}
-            >
-              মেনু
-            </SheetTitle>
+      {/* Sidebar Sheet */}
+      <Sheet
+        open={sidebarOpen}
+        onOpenChange={(open) => {
+          setSidebarOpen(open);
+          if (!open) setMenuSearch("");
+        }}
+      >
+        <SheetContent
+          side="left"
+          className="w-72 p-0 border-0"
+          style={{
+            background: "linear-gradient(180deg, #0f2d1a 0%, #1a4d2e 100%)",
+          }}
+          data-ocid="nav.sheet"
+        >
+          {/* Sidebar Header */}
+          <SheetHeader
+            className="px-4 pt-5 pb-4"
+            style={{ borderBottom: "1px solid rgba(212,175,55,0.3)" }}
+          >
+            <div className="flex items-center gap-3">
+              <img
+                src={logoSrc}
+                alt="লোগো"
+                className="h-11 w-11 object-contain rounded-full"
+                style={{ background: "rgba(255,255,255,0.08)", padding: "4px" }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+              <div style={sidebarFont}>
+                <SheetTitle className="text-left text-base font-bold leading-tight p-0">
+                  <span style={{ color: GOLD }}>{orgSettings.orgName1}</span>{" "}
+                  <span style={{ color: "#f5e6c8" }}>
+                    {orgSettings.orgName2}
+                  </span>
+                </SheetTitle>
+                <p
+                  className="text-xs mt-0.5"
+                  style={{ color: "rgba(255,255,255,0.5)" }}
+                >
+                  {orgSettings.tagline}
+                </p>
+              </div>
+            </div>
           </SheetHeader>
-          <nav className="p-3 space-y-1">
-            {navItems.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() =>
-                  item.onClick ? item.onClick() : navigate(item.key)
-                }
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-left ${
-                  page === item.key
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-secondary text-foreground"
-                }`}
-                data-ocid={`nav.${item.key}.link`}
-              >
-                {item.icon}
-                {item.label}
-              </button>
+
+          {/* Search Box */}
+          <div className="px-3 pt-3 pb-1">
+            <div
+              className="flex items-center gap-2 px-3 py-2 rounded-lg"
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.1)",
+              }}
+            >
+              <Search size={14} style={{ color: "rgba(255,255,255,0.4)" }} />
+              <input
+                type="text"
+                placeholder="মেনু খুঁজুন..."
+                value={menuSearch}
+                onChange={(e) => setMenuSearch(e.target.value)}
+                className="bg-transparent border-none outline-none text-sm flex-1 placeholder:text-white/30"
+                style={{ color: "rgba(255,255,255,0.85)", ...sidebarFont }}
+                data-ocid="nav.search_input"
+              />
+            </div>
+          </div>
+
+          {/* Nav Groups */}
+          <nav
+            className="overflow-y-auto px-2 pb-4"
+            style={{ maxHeight: "calc(100vh - 220px)", ...sidebarFont }}
+          >
+            {filteredGroups.map((group, gi) => (
+              <div key={group.title}>
+                {gi > 0 && (
+                  <div
+                    style={{
+                      height: "1px",
+                      background: "rgba(255,255,255,0.08)",
+                      margin: "8px 12px",
+                    }}
+                  />
+                )}
+                {/* Group Header */}
+                <div
+                  style={{
+                    color: GOLD,
+                    fontSize: "10px",
+                    letterSpacing: "0.08em",
+                    fontWeight: 600,
+                    padding: "12px 12px 4px",
+                    opacity: 0.8,
+                    textTransform: "uppercase",
+                    ...sidebarFont,
+                  }}
+                >
+                  {group.title}
+                </div>
+                {/* Items */}
+                {group.items.map((item) => {
+                  const isActive = page === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() =>
+                        item.onClick ? item.onClick() : navigate(item.key)
+                      }
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-left transition-all"
+                      style={{
+                        background: isActive
+                          ? `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DARK} 100%)`
+                          : "transparent",
+                        color: isActive ? DARK_GREEN : "rgba(255,255,255,0.85)",
+                        fontWeight: isActive ? 600 : 400,
+                        boxShadow: isActive
+                          ? "0 2px 8px rgba(212,175,55,0.4)"
+                          : "none",
+                        marginBottom: "2px",
+                        ...sidebarFont,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isActive) {
+                          (
+                            e.currentTarget as HTMLButtonElement
+                          ).style.background = "rgba(255,255,255,0.08)";
+                          (e.currentTarget as HTMLButtonElement).style.color =
+                            "#ffffff";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive) {
+                          (
+                            e.currentTarget as HTMLButtonElement
+                          ).style.background = "transparent";
+                          (e.currentTarget as HTMLButtonElement).style.color =
+                            "rgba(255,255,255,0.85)";
+                        }
+                      }}
+                      data-ocid={`nav.${item.key}.link`}
+                    >
+                      <span
+                        style={{
+                          color: isActive ? DARK_GREEN : "rgba(212,175,55,0.7)",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {item.icon}
+                      </span>
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
             ))}
-            {!session && (
+
+            {/* Divider before bottom actions */}
+            <div
+              style={{
+                height: "1px",
+                background: "rgba(255,255,255,0.08)",
+                margin: "12px 12px 8px",
+              }}
+            />
+
+            {/* Admin Login / Logout */}
+            {!session ? (
               <button
                 type="button"
                 onClick={() => {
                   setSidebarOpen(false);
                   setLoginModalOpen(true);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-left hover:bg-secondary"
-                style={{ color: "#1a6b2a" }}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-left transition-all"
+                style={{
+                  border: "1px solid rgba(212,175,55,0.4)",
+                  color: GOLD,
+                  background: "transparent",
+                  ...sidebarFont,
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    "rgba(212,175,55,0.1)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    "transparent";
+                }}
                 data-ocid="nav.admin_login.link"
               >
-                <Lock size={18} />
+                <Lock size={18} style={{ color: GOLD }} />
                 এডমিন লগইন
               </button>
+            ) : (
+              <div
+                className="px-3 py-3 rounded-lg"
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                <p
+                  className="text-xs mb-2 truncate"
+                  style={{ color: "rgba(255,255,255,0.5)", ...sidebarFont }}
+                >
+                  {session.email}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSidebarOpen(false);
+                    handleLogout();
+                  }}
+                  className="w-full text-xs px-3 py-1.5 rounded-md transition-all"
+                  style={{
+                    border: "1px solid rgba(212,175,55,0.4)",
+                    color: GOLD,
+                    background: "transparent",
+                    ...sidebarFont,
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background =
+                      "rgba(212,175,55,0.1)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background =
+                      "transparent";
+                  }}
+                  data-ocid="nav.sidebar_logout.button"
+                >
+                  লগ আউট
+                </button>
+              </div>
             )}
           </nav>
         </SheetContent>
@@ -418,6 +666,10 @@ export default function App() {
 
   if (viewParam === "blood-search") {
     return <BloodSearchPublicPage actor={actor} />;
+  }
+
+  if (viewParam === "rokto-nibondhan") {
+    return <BloodDonorRegisterPublicPage actor={actor} />;
   }
 
   return <MainApp actor={actor} />;

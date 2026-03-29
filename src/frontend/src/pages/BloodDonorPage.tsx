@@ -735,6 +735,54 @@ export default function BloodDonorPage({
               ))}
             </div>
           )}
+          {/* Shareable Registration Link */}
+          <div className="rounded-xl border border-green-200 bg-green-50 p-4 space-y-2 mt-4">
+            <div className="flex items-center gap-2 text-green-800 font-semibold text-sm">
+              <Link2 size={16} />
+              শেয়ারযোগ্য লিংক — রক্তদাতা হিসেবে নিবন্ধন করুন
+            </div>
+            <div className="bg-white border border-green-200 rounded-lg px-3 py-2 text-xs text-gray-600 break-all font-mono select-all">
+              {`${window.location.origin}${window.location.pathname}?view=rokto-nibondhan`}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                data-ocid="blooddonor.reg_link.copy.button"
+                onClick={() => {
+                  const link = `${window.location.origin}${window.location.pathname}?view=rokto-nibondhan`;
+                  navigator.clipboard.writeText(link).catch(() => {});
+                  toast.success("নিবন্ধন লিংক কপি হয়েছে!");
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 transition-colors"
+              >
+                <Copy size={12} />
+                কপি করুন
+              </button>
+              <button
+                type="button"
+                data-ocid="blooddonor.reg_link.share.button"
+                onClick={() => {
+                  const link = `${window.location.origin}${window.location.pathname}?view=rokto-nibondhan`;
+                  if (navigator.share) {
+                    navigator
+                      .share({
+                        title: "রক্তদাতা হিসেবে নিবন্ধন করুন",
+                        text: "আপন ফাউন্ডেশনে রক্তদাতা হিসেবে নিবন্ধন করুন",
+                        url: link,
+                      })
+                      .catch(() => {});
+                  } else {
+                    navigator.clipboard.writeText(link).catch(() => {});
+                    toast.success("লিংক কপি হয়েছে!");
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-green-300 text-green-700 text-xs font-semibold hover:bg-green-50 transition-colors"
+              >
+                <Share2 size={12} />
+                শেয়ার করুন
+              </button>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Tab 2: Blood search */}
@@ -819,6 +867,56 @@ export default function BloodDonorPage({
               <p>উপর থেকে একটি রক্তের গ্রুপ নির্বাচন করুন</p>
             </div>
           )}
+
+          {/* Shareable Search Link */}
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-2 mt-6">
+            <div className="flex items-center gap-2 text-red-800 font-semibold text-sm">
+              <Link2 size={16} />
+              শেয়ারযোগ্য লিংক
+            </div>
+            <p className="text-red-700 text-xs font-medium">রক্তদাতা অনুসন্ধান করুন</p>
+            <div className="bg-white border border-red-200 rounded-lg px-3 py-2 text-xs text-gray-600 break-all font-mono select-all">
+              {`${window.location.origin}${window.location.pathname}?view=rokto-onusondhan`}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                data-ocid="blooddonor.search_link.copy.button"
+                onClick={() => {
+                  const link = `${window.location.origin}${window.location.pathname}?view=rokto-onusondhan`;
+                  navigator.clipboard.writeText(link).catch(() => {});
+                  toast.success("অনুসন্ধান লিংক কপি হয়েছে!");
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 transition-colors"
+              >
+                <Copy size={12} />
+                কপি করুন
+              </button>
+              <button
+                type="button"
+                data-ocid="blooddonor.search_link.share.button"
+                onClick={() => {
+                  const link = `${window.location.origin}${window.location.pathname}?view=rokto-onusondhan`;
+                  if (navigator.share) {
+                    navigator
+                      .share({
+                        title: "রক্তদাতা অনুসন্ধান করুন",
+                        text: "আপন ফাউন্ডেশনের রক্তদাতা অনুসন্ধান করুন",
+                        url: link,
+                      })
+                      .catch(() => {});
+                  } else {
+                    navigator.clipboard.writeText(link).catch(() => {});
+                    toast.success("লিংক কপি হয়েছে!");
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-red-300 text-red-700 text-xs font-semibold hover:bg-red-50 transition-colors"
+              >
+                <Share2 size={12} />
+                শেয়ার করুন
+              </button>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
