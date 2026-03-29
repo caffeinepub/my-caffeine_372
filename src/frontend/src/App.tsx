@@ -62,7 +62,8 @@ export type Page =
   | "resolution"
   | "familytree"
   | "reports"
-  | "blooddonor";
+  | "blooddonor"
+  | "blooddonorinfo";
 
 export default function App() {
   const { actor } = useActor();
@@ -154,6 +155,11 @@ export default function App() {
     {
       key: "blooddonor",
       label: "রক্তদাতা গ্রুপ",
+      icon: <Droplets size={18} />,
+    },
+    {
+      key: "blooddonorinfo",
+      label: "রক্তদাতা তথ্য",
       icon: <Droplets size={18} />,
     },
     {
@@ -362,6 +368,9 @@ export default function App() {
         {page === "reports" && <ReportsPage actor={actor} />}
         {page === "blooddonor" && (
           <BloodDonorPage actor={actor} isAdmin={isAdmin} />
+        )}
+        {page === "blooddonorinfo" && (
+          <BloodDonorPage actor={actor} isAdmin={isAdmin} defaultTab="donors" />
         )}
         {page === "settings" && isAdmin && (
           <SettingsPage

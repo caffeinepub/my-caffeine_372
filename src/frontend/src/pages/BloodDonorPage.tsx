@@ -26,6 +26,7 @@ import { loadSettings } from "../store/settingsStore";
 interface Props {
   actor: backendInterface | null;
   isAdmin: boolean;
+  defaultTab?: string;
 }
 
 interface ExternalDonor {
@@ -323,7 +324,10 @@ function RegistrationModal({
   );
 }
 
-export default function BloodDonorPage({ actor }: Props) {
+export default function BloodDonorPage({
+  actor,
+  defaultTab = "donors",
+}: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [bloodGroupFilter, setBloodGroupFilter] = useState("সব");
   const [searchBloodGroup, setSearchBloodGroup] = useState("");
@@ -496,7 +500,7 @@ export default function BloodDonorPage({ actor }: Props) {
         </div>
       </div>
 
-      <Tabs defaultValue="donors" className="w-full">
+      <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="w-full grid grid-cols-2">
           <TabsTrigger value="donors" data-ocid="blooddonor.donors.tab">
             <Droplets size={14} className="mr-1.5" />
