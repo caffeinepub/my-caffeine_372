@@ -228,7 +228,8 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
             <img
               src={logoSrc}
               alt="লোগো"
-              className="h-12 w-12 object-contain"
+              className="h-12 w-12 object-contain rounded-full"
+              style={{ background: "rgba(255,255,255,0.15)", padding: "3px" }}
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = "none";
               }}
@@ -383,7 +384,7 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
                 src={logoSrc}
                 alt="লোগো"
                 className="h-11 w-11 object-contain rounded-full"
-                style={{ background: "rgba(255,255,255,0.08)", padding: "4px" }}
+                style={{ background: "rgba(255,255,255,0.15)", padding: "4px" }}
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
                 }}

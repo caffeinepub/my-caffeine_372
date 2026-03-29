@@ -181,7 +181,7 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-36 h-36 border-2 border-dashed border-border rounded-xl flex items-center justify-center overflow-hidden bg-muted hover:border-primary/50 transition-colors flex-shrink-0"
+                  className="w-36 h-36 border-2 border-dashed border-border rounded-full flex items-center justify-center overflow-hidden bg-muted hover:border-primary/50 transition-colors flex-shrink-0"
                   data-ocid="settings.upload_button"
                   title="লোগো আপলোড করুন"
                 >
@@ -337,7 +337,7 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-3">
-                <div className="w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-white border border-border flex items-center justify-center">
+                <div className="w-14 h-14 flex-shrink-0 rounded-full overflow-hidden bg-white border border-border flex items-center justify-center">
                   {settings.logoDataUrl ? (
                     <img
                       src={settings.logoDataUrl}

@@ -39,7 +39,8 @@ export default function LoginPage({ onLogin, isModal }: Props) {
         <img
           src="/assets/generated/apon-foundation-logo-transparent.dim_200x200.png"
           alt="আপন ফাউন্ডেশন লোগো"
-          className="h-16 w-16 object-contain"
+          className="h-16 w-16 object-contain rounded-full"
+          style={{ background: "rgba(240,240,240,0.8)", padding: "4px" }}
         />
         <div className="text-center">
           <div className="text-2xl font-bold">

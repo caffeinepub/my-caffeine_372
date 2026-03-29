@@ -39,7 +39,7 @@ export function buildDocumentHeader(opts: PdfHeaderOptions): string {
   const logoSize = 70;
 
   const logoImg = logoDataUrl
-    ? `<img src="${logoDataUrl}" style="width:${logoSize}px;height:${logoSize}px;object-fit:contain;display:block;image-rendering:high-quality;" alt="logo" />`
+    ? `<div style="width:${logoSize}px;height:${logoSize}px;border-radius:50%;overflow:hidden;background:#f0f0f0;display:flex;align-items:center;justify-content:center;"><img src="${logoDataUrl}" style="width:100%;height:100%;object-fit:contain;display:block;" alt="logo" /></div>`
     : `<div style="width:${logoSize}px;height:${logoSize}px;background:#166534;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:26px;font-weight:bold;">আ</div>`;
 
   return `
