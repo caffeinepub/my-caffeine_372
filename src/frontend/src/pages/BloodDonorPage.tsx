@@ -17,7 +17,15 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
-import { Copy, Droplets, Phone, Search, Share2, UserPlus } from "lucide-react";
+import {
+  Copy,
+  Droplets,
+  Phone,
+  Search,
+  Share2,
+  ShieldAlert,
+  UserPlus,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { backendInterface } from "../backend";
@@ -50,6 +58,17 @@ interface DonorEntry {
 }
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+const HEALTH_CONDITIONS = [
+  "HIV/AIDS",
+  "হেপাটাইটিস বি বা সি",
+  "ক্যান্সার (চিকিৎসাধীন বা গত ৫ বছরের মধ্যে পুনরাবৃত্তি হলে)",
+  "গুরুতর হৃদরোগ বা হার্ট অ্যাটাক",
+  "কিডনি ব্যর্থতা বা ডায়ালাইসিসে থাকা",
+  "হিমোফিলিয়া বা রক্ত জমাট বাঁধার সমস্যা",
+  "গুরুতর অ্যানিমিয়া",
+  "সক্রিয় সংক্রমণ (যেমন টিউবারকুলোসিস, ম্যালেরিয়া, জ্বর, ফ্লু ইত্যাদি)",
+];
 
 const BLOOD_GROUP_COLORS: Record<string, { bg: string; text: string }> = {
   "A+": { bg: "#fee2e2", text: "#991b1b" },
@@ -176,6 +195,11 @@ function RegistrationModal({
     bloodGroup: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [healthChecks, setHealthChecks] = useState<boolean[]>(
+    Array(8).fill(false),
+  );
+
+  const allHealthChecked = healthChecks.every(Boolean);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -187,6 +211,10 @@ function RegistrationModal({
       !form.bloodGroup
     ) {
       toast.error("সব ঘর পূরণ করুন।");
+      return;
+    }
+    if (!allHealthChecked) {
+      toast.error("স্বাস্থ্য ঘোষণার সকল বিষয়ে সম্মতি দিন।");
       return;
     }
     setSubmitting(true);
@@ -206,6 +234,7 @@ function RegistrationModal({
       address: "",
       bloodGroup: "",
     });
+    setHealthChecks(Array(8).fill(false));
     setSubmitting(false);
     onRegistered();
     onClose();
@@ -214,7 +243,7 @@ function RegistrationModal({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
-        className="max-w-md"
+        className="max-w-md max-h-[90vh] overflow-y-auto"
         data-ocid="blooddonor.registration.modal"
       >
         <DialogHeader>
@@ -297,6 +326,62 @@ function RegistrationModal({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Health Declaration Section */}
+          <div
+            className="rounded-xl p-4 space-y-3"
+            style={{
+              background: "#fff7ed",
+              border: "1px solid #92400e",
+            }}
+          >
+            <div
+              className="flex items-center gap-2 font-bold text-sm"
+              style={{ color: "#9a3412" }}
+            >
+              <ShieldAlert size={16} />
+              স্বাস্থ্য ঘোষণা
+            </div>
+            <p className="text-xs" style={{ color: "#9a3412" }}>
+              নিচের প্রতিটি বিষয়ে নিশ্চিত করুন যে আপনার এই রোগ বা অবস্থা নেই:
+            </p>
+            <div className="space-y-2">
+              {HEALTH_CONDITIONS.map((condition, idx) => (
+                <label
+                  key={condition}
+                  className="flex items-start gap-2.5 cursor-pointer group"
+                  data-ocid={`blooddonor.health.checkbox.${idx + 1}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={healthChecks[idx]}
+                    onChange={(e) =>
+                      setHealthChecks((prev) => {
+                        const next = [...prev];
+                        next[idx] = e.target.checked;
+                        return next;
+                      })
+                    }
+                    className="mt-0.5 h-4 w-4 flex-shrink-0 accent-red-700 cursor-pointer"
+                  />
+                  <span
+                    className="text-xs leading-relaxed"
+                    style={{ color: "#7c2d12" }}
+                  >
+                    {condition}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p
+              className="text-xs italic pt-1 border-t"
+              style={{ color: "#92400e", borderColor: "#fcd34d" }}
+            >
+              আমি নিশ্চিত করছি যে আমার উপরোক্ত কোনো রোগ নেই এবং আমি রক্তদাতা হিসেবে
+              যোগ দিতে সম্মত।
+            </p>
+          </div>
+
           <div className="flex gap-3 pt-2">
             <Button
               type="button"
@@ -309,9 +394,9 @@ function RegistrationModal({
             </Button>
             <Button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !allHealthChecked}
               className="flex-1"
-              style={{ background: "#dc2626" }}
+              style={{ background: allHealthChecked ? "#dc2626" : undefined }}
               data-ocid="blooddonor.registration.submit.button"
             >
               <Droplets size={14} className="mr-1" />

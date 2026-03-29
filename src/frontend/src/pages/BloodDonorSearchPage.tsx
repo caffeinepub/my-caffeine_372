@@ -23,6 +23,7 @@ import {
   Phone,
   Search,
   Share2,
+  ShieldAlert,
   UserPlus,
 } from "lucide-react";
 import { useState } from "react";
@@ -55,6 +56,17 @@ interface DonorEntry {
 }
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+const HEALTH_CONDITIONS = [
+  "HIV/AIDS",
+  "হেপাটাইটিস বি বা সি",
+  "ক্যান্সার (চিকিৎসাধীন বা গত ৫ বছরের মধ্যে পুনরাবৃত্তি হলে)",
+  "গুরুতর হৃদরোগ বা হার্ট অ্যাটাক",
+  "কিডনি ব্যর্থতা বা ডায়ালাইসিসে থাকা",
+  "হিমোফিলিয়া বা রক্ত জমাট বাঁধার সমস্যা",
+  "গুরুতর অ্যানিমিয়া",
+  "সক্রিয় সংক্রমণ (যেমন টিউবারকুলোসিস, ম্যালেরিয়া, জ্বর, ফ্লু ইত্যাদি)",
+];
 
 const BG_META: Record<string, { color: string; light: string; label: string }> =
   {
@@ -191,6 +203,11 @@ function RegModal({
     address: "",
     bloodGroup: "",
   });
+  const [healthChecks, setHealthChecks] = useState<boolean[]>(
+    Array(8).fill(false),
+  );
+
+  const allHealthChecked = healthChecks.every(Boolean);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -202,6 +219,10 @@ function RegModal({
       !form.bloodGroup
     ) {
       toast.error("সব ঘর পূরণ করুন।");
+      return;
+    }
+    if (!allHealthChecked) {
+      toast.error("স্বাস্থ্য ঘোষণার সকল বিষয়ে সম্মতি দিন।");
       return;
     }
     const donors = loadExternalDonors();
@@ -219,13 +240,17 @@ function RegModal({
       address: "",
       bloodGroup: "",
     });
+    setHealthChecks(Array(8).fill(false));
     onDone();
     onClose();
   }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md" data-ocid="bdsearch.reg.modal">
+      <DialogContent
+        className="max-w-md max-h-[90vh] overflow-y-auto"
+        data-ocid="bdsearch.reg.modal"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Heart size={18} className="text-red-600" />
@@ -282,6 +307,62 @@ function RegModal({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Health Declaration Section */}
+          <div
+            className="rounded-xl p-4 space-y-3"
+            style={{
+              background: "#fff7ed",
+              border: "1px solid #92400e",
+            }}
+          >
+            <div
+              className="flex items-center gap-2 font-bold text-sm"
+              style={{ color: "#9a3412" }}
+            >
+              <ShieldAlert size={16} />
+              স্বাস্থ্য ঘোষণা
+            </div>
+            <p className="text-xs" style={{ color: "#9a3412" }}>
+              নিচের প্রতিটি বিষয়ে নিশ্চিত করুন যে আপনার এই রোগ বা অবস্থা নেই:
+            </p>
+            <div className="space-y-2">
+              {HEALTH_CONDITIONS.map((condition, idx) => (
+                <label
+                  key={condition}
+                  className="flex items-start gap-2.5 cursor-pointer group"
+                  data-ocid={`bdsearch.health.checkbox.${idx + 1}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={healthChecks[idx]}
+                    onChange={(e) =>
+                      setHealthChecks((prev) => {
+                        const next = [...prev];
+                        next[idx] = e.target.checked;
+                        return next;
+                      })
+                    }
+                    className="mt-0.5 h-4 w-4 flex-shrink-0 accent-red-700 cursor-pointer"
+                  />
+                  <span
+                    className="text-xs leading-relaxed"
+                    style={{ color: "#7c2d12" }}
+                  >
+                    {condition}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p
+              className="text-xs italic pt-1 border-t"
+              style={{ color: "#92400e", borderColor: "#fcd34d" }}
+            >
+              আমি নিশ্চিত করছি যে আমার উপরোক্ত কোনো রোগ নেই এবং আমি রক্তদাতা হিসেবে
+              যোগ দিতে সম্মত।
+            </p>
+          </div>
+
           <div className="flex gap-3 pt-1">
             <Button
               type="button"
@@ -293,7 +374,9 @@ function RegModal({
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-red-600 hover:bg-red-700"
+              disabled={!allHealthChecked}
+              className="flex-1"
+              style={{ background: allHealthChecked ? "#dc2626" : undefined }}
             >
               <Heart size={14} className="mr-1.5" /> নিবন্ধন করুন
             </Button>
