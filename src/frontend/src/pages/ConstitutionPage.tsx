@@ -22,6 +22,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import type { backendInterface } from "../backend";
+import ModuleHeader from "../components/ModuleHeader";
 import { loadSettings } from "../store/settingsStore";
 import {
   buildDocumentHeader,
@@ -236,7 +237,7 @@ export default function ConstitutionPage({ actor, isAdmin }: Props) {
       address: org.address || "বালীগাঁও, অষ্টগ্রাম, কিশোরগঞ্জ",
       email: org.email || "aponfoundation.baligaw@gmail.com",
       whatsapp: org.whatsapp || "+8801608427115",
-      color1: org.color1 || "#166534",
+      color1: org.color1 || "#1a4d2e",
       color2: org.color2 || "#c2410c",
     };
     const chapterPages = chapters
@@ -401,11 +402,13 @@ ${chapterPages}
 
   return (
     <div className="space-y-6">
+      <ModuleHeader
+        title="গঠনতন্ত্র"
+        subtitle="সংগঠনের মূল নিয়মকানুন ও বিধিমালা"
+        icon={<BookOpen size={22} />}
+      />
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <BookOpen size={24} style={{ color: "#166534" }} />
-          <h1 className="text-2xl font-bold text-foreground">গঠনতন্ত্র</h1>
-        </div>
+        <div />
         <div className="flex items-center gap-2">
           {chapters.length > 0 && (
             <Button
@@ -420,7 +423,7 @@ ${chapterPages}
           {isAdmin && (
             <Button
               onClick={openAdd}
-              style={{ background: "#166534" }}
+              style={{ background: "#1a4d2e" }}
               className="text-white"
               data-ocid="constitution.open_modal_button"
             >
@@ -437,7 +440,7 @@ ${chapterPages}
         >
           <Loader2
             className="animate-spin h-8 w-8"
-            style={{ color: "#166534" }}
+            style={{ color: "#1a4d2e" }}
           />
         </div>
       ) : chapters.length === 0 ? (
@@ -454,7 +457,7 @@ ${chapterPages}
             <Card
               key={String(ch.id)}
               className="border-l-4"
-              style={{ borderLeftColor: "#166534" }}
+              style={{ borderLeftColor: "#1a4d2e" }}
               data-ocid={`constitution.item.${idx + 1}`}
             >
               <CardHeader className="pb-2">
@@ -462,11 +465,11 @@ ${chapterPages}
                   <div className="flex items-center gap-3">
                     <span
                       className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                      style={{ background: "#166534" }}
+                      style={{ background: "#1a4d2e" }}
                     >
                       {String(ch.chapterNumber)}
                     </span>
-                    <CardTitle className="text-lg" style={{ color: "#166534" }}>
+                    <CardTitle className="text-lg" style={{ color: "#1a4d2e" }}>
                       {ch.title}
                     </CardTitle>
                   </div>
@@ -512,7 +515,7 @@ ${chapterPages}
               data-ocid="constitution.dialog"
             >
               <DialogHeader>
-                <DialogTitle style={{ color: "#166534" }}>
+                <DialogTitle style={{ color: "#1a4d2e" }}>
                   {editChapter ? "অধ্যায় সম্পাদনা" : "নতুন অধ্যায় যোগ করুন"}
                 </DialogTitle>
               </DialogHeader>
@@ -561,7 +564,7 @@ ${chapterPages}
                 <Button
                   onClick={handleSubmit}
                   disabled={isMutating}
-                  style={{ background: "#166534" }}
+                  style={{ background: "#1a4d2e" }}
                   className="text-white"
                   data-ocid="constitution.dialog.submit_button"
                 >

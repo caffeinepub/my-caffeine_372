@@ -30,6 +30,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import type { backendInterface } from "../backend";
+import ModuleHeader from "../components/ModuleHeader";
 import { loadSettings } from "../store/settingsStore";
 
 interface Props {
@@ -79,7 +80,7 @@ const BLOOD_GROUP_COLORS: Record<string, { bg: string; text: string }> = {
   "AB+": { bg: "#ede9fe", text: "#4c1d95" },
   "AB-": { bg: "#ddd6fe", text: "#5b21b6" },
   "O+": { bg: "#dcfce7", text: "#14532d" },
-  "O-": { bg: "#bbf7d0", text: "#166534" },
+  "O-": { bg: "#bbf7d0", text: "#1a4d2e" },
 };
 
 function getBloodGroupStyle(group: string) {
@@ -564,28 +565,21 @@ export default function BloodDonorPage({
   return (
     <div className="space-y-6" data-ocid="blooddonor.page">
       {/* Page header */}
-      <div
-        className="rounded-2xl p-6 text-white"
-        style={{
-          background: "linear-gradient(135deg, #dc2626 0%, #991b1b 100%)",
-        }}
-      >
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
-            <Droplets size={28} className="text-white" />
+      <ModuleHeader
+        title="রক্তদাতা গ্রুপ"
+        subtitle="আপন ফাউন্ডেশনের রক্তদাতা তালিকা ও অনুসন্ধান"
+        icon={<Droplets size={22} />}
+        rightContent={
+          <div className="text-right">
+            <div className="text-3xl font-bold" style={{ color: "#D4AF37" }}>
+              {allDonors.length}
+            </div>
+            <div className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+              মোট রক্তদাতা
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold">রক্তদাতা গ্রুপ</h1>
-            <p className="text-red-100 text-sm mt-0.5">
-              আপন ফাউন্ডেশনের রক্তদাতা তালিকা ও অনুসন্ধান
-            </p>
-          </div>
-          <div className="ml-auto text-right">
-            <div className="text-3xl font-bold">{allDonors.length}</div>
-            <div className="text-red-200 text-xs">মোট রক্তদাতা</div>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Quick Action Buttons */}
       <div className="grid grid-cols-2 gap-3">

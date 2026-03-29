@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Download, Eye, Printer, Save, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import ModuleHeader from "../components/ModuleHeader";
 import { loadSettings } from "../store/settingsStore";
 import {
   buildDocumentHeader,
@@ -239,22 +240,11 @@ body { font-family:'Noto Sans Bengali',sans-serif; background:#fff; color:#111; 
 
   return (
     <div className="space-y-6" data-ocid="noticeboard.page">
-      <div className="flex items-center gap-3">
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center text-white"
-          style={{ background: "#166534" }}
-        >
-          <Bell size={20} />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold" style={{ color: "#166534" }}>
-            নোটিশ বোর্ড
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            নোটিশ তৈরি করুন এবং সিস্টেমে লিপিবদ্ধ করুন
-          </p>
-        </div>
-      </div>
+      <ModuleHeader
+        title="নোটিশ বোর্ড"
+        subtitle="নোটিশ তৈরি করুন এবং সিস্টেমে লিপিবদ্ধ করুন"
+        icon={<Bell size={22} />}
+      />
 
       {isAdmin ? (
         <>
@@ -325,7 +315,7 @@ body { font-family:'Noto Sans Bengali',sans-serif; background:#fff; color:#111; 
             <div className="flex flex-wrap gap-3 pt-2">
               <Button
                 onClick={() => setPreview(true)}
-                style={{ background: "#166534" }}
+                style={{ background: "#1a4d2e" }}
                 className="text-white hover:opacity-90"
                 data-ocid="noticeboard.primary_button"
               >

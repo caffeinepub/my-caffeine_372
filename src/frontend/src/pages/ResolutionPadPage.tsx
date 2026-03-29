@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import ModuleHeader from "../components/ModuleHeader";
 import { loadSettings } from "../store/settingsStore";
 import {
   buildDocumentHeader,
@@ -277,22 +278,11 @@ td:first-child { font-weight:600; width:40%; background:#f7fdf7; }
 
   return (
     <div className="space-y-6" data-ocid="resolution.page">
-      <div className="flex items-center gap-3">
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center text-white"
-          style={{ background: "#7c3aed" }}
-        >
-          <ClipboardList size={20} />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold" style={{ color: "#7c3aed" }}>
-            রেজুলেশন প্যাড
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            সভার কার্যবিবরণী ও রেজুলেশন তৈরি ও সংরক্ষণ করুন
-          </p>
-        </div>
-      </div>
+      <ModuleHeader
+        title="রেজুলেশন প্যাড"
+        subtitle="সভার কার্যবিবরণী ও রেজুলেশন তৈরি ও সংরক্ষণ করুন"
+        icon={<ClipboardList size={22} />}
+      />
 
       {isAdmin ? (
         <>
@@ -403,7 +393,7 @@ td:first-child { font-weight:600; width:40%; background:#f7fdf7; }
             <div className="flex flex-wrap gap-3 pt-2">
               <Button
                 onClick={() => setPreview(true)}
-                style={{ background: "#7c3aed" }}
+                style={{ background: "#1a4d2e" }}
                 className="text-white hover:opacity-90"
                 data-ocid="resolution.primary_button"
               >
@@ -423,7 +413,7 @@ td:first-child { font-weight:600; width:40%; background:#f7fdf7; }
                   onClick={() => saveMutation.mutate()}
                   disabled={saveMutation.isPending}
                   variant="outline"
-                  className="border-purple-600 text-purple-700 hover:bg-purple-50"
+                  className="border-purple-600 text-emerald-800 hover:bg-emerald-50"
                   data-ocid="resolution.save_button"
                 >
                   <Save size={16} className="mr-2" /> সংরক্ষণ করুন
@@ -690,7 +680,7 @@ td:first-child { font-weight:600; width:40%; background:#f7fdf7; }
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full font-medium">
+                    <span className="text-xs bg-emerald-100 text-purple-800 px-2 py-0.5 rounded-full font-medium">
                       {r.resNo || "নং নেই"}
                     </span>
                     <span className="font-medium text-sm text-foreground">

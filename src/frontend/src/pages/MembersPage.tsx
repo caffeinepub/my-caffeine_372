@@ -27,10 +27,19 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, Loader2, Pencil, Plus, Printer, Trash2 } from "lucide-react";
+import {
+  Download,
+  Loader2,
+  Pencil,
+  Plus,
+  Printer,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Council, type CouncilMember, type backendInterface } from "../backend";
+import ModuleHeader from "../components/ModuleHeader";
 import { loadSettings } from "../store/settingsStore";
 import {
   buildDocumentHeader,
@@ -681,12 +690,19 @@ export default function MembersPage({ actor, isAdmin }: Props) {
 
   return (
     <div className="space-y-6">
+      <ModuleHeader
+        title="সদস্য তালিকা"
+        subtitle="সকল পরিষদের সদস্যদের তালিকা ও ব্যবস্থাপনা"
+        icon={<Users size={22} />}
+      />
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">সদস্য তালিকা</h1>
+        <h2 className="text-base font-semibold" style={{ color: "#1a4d2e" }}>
+          সদস্য তালিকা
+        </h2>
         {isAdmin && (
           <Button
             onClick={openAdd}
-            style={{ background: "#1a6b2a" }}
+            style={{ background: "#1a4d2e" }}
             className="text-white"
             data-ocid="members.open_modal_button"
           >

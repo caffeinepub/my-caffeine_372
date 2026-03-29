@@ -216,7 +216,13 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Sticky Header */}
-      <header className="bg-white border-b border-border shadow-sm no-print sticky top-0 z-50">
+      <header
+        className="no-print sticky top-0 z-50"
+        style={{
+          background: "linear-gradient(135deg, #1a4d2e 0%, #0f2d1a 100%)",
+          boxShadow: "0 2px 12px rgba(15,45,26,0.35)",
+        }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-shrink-0">
             <img
@@ -227,16 +233,15 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
                 (e.target as HTMLImageElement).style.display = "none";
               }}
             />
-            <div>
+            <div style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
               <div className="text-xl font-bold leading-tight">
-                <span style={{ color: orgSettings.color1 }}>
-                  {orgSettings.orgName1}
-                </span>{" "}
-                <span style={{ color: orgSettings.color2 }}>
-                  {orgSettings.orgName2}
-                </span>
+                <span style={{ color: "#D4AF37" }}>{orgSettings.orgName1}</span>{" "}
+                <span style={{ color: "#f5e6c8" }}>{orgSettings.orgName2}</span>
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div
+                className="text-xs"
+                style={{ color: "rgba(255,255,255,0.5)" }}
+              >
                 {orgSettings.tagline}
               </div>
             </div>
@@ -245,7 +250,10 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
             {!isOnline && (
               <div
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
-                style={{ background: "#fee2e2", color: "#991b1b" }}
+                style={{
+                  background: "rgba(255,255,255,0.15)",
+                  color: "#fca5a5",
+                }}
                 data-ocid="nav.offline_state"
               >
                 <WifiOff size={12} />
@@ -255,7 +263,7 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
             {isOnline && pendingCount > 0 && (
               <div
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
-                style={{ background: "#fff7ed", color: "#9a3412" }}
+                style={{ background: "rgba(212,175,55,0.2)", color: "#D4AF37" }}
                 data-ocid="nav.syncing_state"
               >
                 <span
@@ -282,7 +290,10 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
             </button>
             {session ? (
               <div className="flex items-center gap-2 text-sm flex-shrink-0">
-                <span className="text-muted-foreground hidden lg:block text-xs">
+                <span
+                  className="hidden lg:block text-xs"
+                  style={{ color: "rgba(255,255,255,0.6)" }}
+                >
                   {session.email}
                 </span>
                 {isSuperAdmin ? (
@@ -300,7 +311,19 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border"
+                  className="text-xs transition-colors px-2 py-1 rounded"
+                  style={{
+                    border: "1px solid rgba(212,175,55,0.4)",
+                    color: "#D4AF37",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background =
+                      "rgba(212,175,55,0.1)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background =
+                      "transparent";
+                  }}
                   data-ocid="nav.logout.button"
                 >
                   লগ আউট
@@ -310,8 +333,20 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
               <button
                 type="button"
                 onClick={() => setLoginModalOpen(true)}
-                className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded border border-border hover:bg-secondary transition-colors"
-                style={{ color: "#1a6b2a" }}
+                className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded transition-all"
+                style={{
+                  border: "1px solid rgba(212,175,55,0.5)",
+                  color: "#D4AF37",
+                  background: "transparent",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    "rgba(212,175,55,0.1)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    "transparent";
+                }}
                 data-ocid="nav.login.button"
               >
                 <Lock size={13} />
@@ -569,8 +604,13 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
             <button
               type="button"
               onClick={() => navigate("dashboard")}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-border bg-white hover:bg-secondary transition-colors shadow-sm"
-              style={{ color: "#166534" }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+              style={{
+                background: "linear-gradient(135deg, #1a4d2e 0%, #0f2d1a 100%)",
+                color: "#D4AF37",
+                boxShadow: "0 2px 8px rgba(15,45,26,0.25)",
+                border: "1px solid rgba(212,175,55,0.3)",
+              }}
               data-ocid="nav.back.button"
             >
               <ArrowLeft size={16} />
@@ -619,14 +659,21 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
         )}
       </main>
 
-      <footer className="bg-white border-t border-border py-4 text-center text-xs text-muted-foreground no-print">
+      <footer
+        className="no-print py-4 text-center text-xs"
+        style={{
+          background: "linear-gradient(135deg, #0f2d1a 0%, #1a4d2e 100%)",
+          color: "rgba(255,255,255,0.5)",
+        }}
+      >
         <p>
           © {new Date().getFullYear()}. Built with ❤️ using{" "}
           <a
             href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-primary"
+            className="underline"
+            style={{ color: "#D4AF37" }}
           >
             caffeine.ai
           </a>

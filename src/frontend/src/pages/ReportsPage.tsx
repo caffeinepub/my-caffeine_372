@@ -28,6 +28,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FileDown, Filter, Plus, Search, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Council } from "../backend";
+import ModuleHeader from "../components/ModuleHeader";
 import { loadSettings } from "../store/settingsStore";
 import {
   buildDocumentHeader,
@@ -782,14 +783,11 @@ export default function ReportsPage({ actor, isAdmin = false }: Props) {
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-primary mb-1">
-          রিপোর্ট ও এক্সপোর্ট
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          যেকোনো রিপোর্ট ফিল্টার করে হাই-কোয়ালিটি PDF ডাউনলোড করুন
-        </p>
-      </div>
+      <ModuleHeader
+        title="রিপোর্ট ও এক্সপোর্ট"
+        subtitle="যেকোনো রিপোর্ট ফিল্টার করে হাই-কোয়ালিটি PDF ডাউনলোড করুন"
+        icon={<FileDown size={22} />}
+      />
 
       <Tabs defaultValue="income">
         <TabsList

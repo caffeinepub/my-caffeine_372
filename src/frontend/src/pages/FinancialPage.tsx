@@ -41,6 +41,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import type { backendInterface } from "../backend";
+import ModuleHeader from "../components/ModuleHeader";
 import {
   buildDocumentHeader,
   buildDocumentWatermark,
@@ -112,7 +113,7 @@ function buildOrgHeader(settings: OrgSettings): string {
     address: settings.address || "বালীগাঁও, অষ্টগ্রাম, কিশোরগঞ্জ",
     email: settings.email || "aponfoundation.baligaw@gmail.com",
     whatsapp: settings.whatsapp || "+8801608427115",
-    color1: settings.color1 || "#166534",
+    color1: settings.color1 || "#1a4d2e",
     color2: settings.color2 || "#c2410c",
   });
 }
@@ -721,21 +722,22 @@ export default function FinancialPage({ actor, isAdmin, defaultTab }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Wallet size={24} style={{ color: "#166534" }} />
-        <h1 className="text-2xl font-bold text-foreground">আর্থিক ব্যবস্থাপনা</h1>
-      </div>
+      <ModuleHeader
+        title="আর্থিক ব্যবস্থাপনা"
+        subtitle="আয়-ব্যয়ের সম্পূর্ণ হিসাব ও ব্যবস্থাপনা"
+        icon={<Wallet size={22} />}
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-l-4" style={{ borderLeftColor: "#166534" }}>
+        <Card className="border-l-4" style={{ borderLeftColor: "#1a4d2e" }}>
           <CardHeader className="pb-1">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <ArrowUpCircle size={16} style={{ color: "#166534" }} /> মোট আয়
+              <ArrowUpCircle size={16} style={{ color: "#1a4d2e" }} /> মোট আয়
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold" style={{ color: "#166534" }}>
+            <p className="text-2xl font-bold" style={{ color: "#1a4d2e" }}>
               ৳{totalIncome.toLocaleString()} টাকা
             </p>
           </CardContent>
@@ -754,7 +756,7 @@ export default function FinancialPage({ actor, isAdmin, defaultTab }: Props) {
         </Card>
         <Card
           className="border-l-4"
-          style={{ borderLeftColor: balance >= 0 ? "#166534" : "#991b1b" }}
+          style={{ borderLeftColor: balance >= 0 ? "#1a4d2e" : "#991b1b" }}
         >
           <CardHeader className="pb-1">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
@@ -764,7 +766,7 @@ export default function FinancialPage({ actor, isAdmin, defaultTab }: Props) {
           <CardContent>
             <p
               className="text-2xl font-bold"
-              style={{ color: balance >= 0 ? "#166534" : "#991b1b" }}
+              style={{ color: balance >= 0 ? "#1a4d2e" : "#991b1b" }}
             >
               ৳{balance.toLocaleString()} টাকা
             </p>
@@ -865,7 +867,7 @@ export default function FinancialPage({ actor, isAdmin, defaultTab }: Props) {
                   setEditIncomeTarget(null);
                   setIncomeDialogOpen(true);
                 }}
-                style={{ background: "#166534" }}
+                style={{ background: "#1a4d2e" }}
                 className="text-white flex-shrink-0 text-base px-5 py-2"
                 data-ocid="financial.income.open_modal_button"
               >
@@ -882,7 +884,7 @@ export default function FinancialPage({ actor, isAdmin, defaultTab }: Props) {
                 >
                   <Loader2
                     className="animate-spin h-8 w-8"
-                    style={{ color: "#166534" }}
+                    style={{ color: "#1a4d2e" }}
                   />
                 </div>
               ) : filteredIncome.length === 0 ? (
@@ -931,7 +933,7 @@ export default function FinancialPage({ actor, isAdmin, defaultTab }: Props) {
                         <TableCell>{r.mobile}</TableCell>
                         <TableCell
                           className="font-semibold"
-                          style={{ color: "#166534" }}
+                          style={{ color: "#1a4d2e" }}
                         >
                           ৳{r.amount.toLocaleString()}
                         </TableCell>
@@ -944,7 +946,7 @@ export default function FinancialPage({ actor, isAdmin, defaultTab }: Props) {
                                 variant="ghost"
                                 onClick={() => openIncomeEdit(r)}
                                 className="h-7 w-7"
-                                style={{ color: "#166534" }}
+                                style={{ color: "#1a4d2e" }}
                                 data-ocid={`financial.income.edit_button.${idx + 1}`}
                               >
                                 <Pencil size={13} />
@@ -1188,7 +1190,7 @@ export default function FinancialPage({ actor, isAdmin, defaultTab }: Props) {
       >
         <DialogContent className="max-w-lg" data-ocid="financial.income.dialog">
           <DialogHeader>
-            <DialogTitle style={{ color: "#166534" }}>
+            <DialogTitle style={{ color: "#1a4d2e" }}>
               {editIncomeTarget ? "আয়ের তথ্য সম্পাদনা" : "আয়ের তথ্য যোগ করুন"}
             </DialogTitle>
           </DialogHeader>
@@ -1376,7 +1378,7 @@ export default function FinancialPage({ actor, isAdmin, defaultTab }: Props) {
             <Button
               onClick={handleIncomeSubmit}
               disabled={addIncomeMutation.isPending}
-              style={{ background: "#166534" }}
+              style={{ background: "#1a4d2e" }}
               className="text-white"
               data-ocid="financial.income.dialog.submit_button"
             >

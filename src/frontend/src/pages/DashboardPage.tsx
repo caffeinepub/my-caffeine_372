@@ -4,7 +4,11 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   BookOpen,
+  Droplets,
+  FileDown,
+  GitBranch,
   TrendingUp,
+  Users,
   Wallet,
 } from "lucide-react";
 import type { Page } from "../App";
@@ -25,6 +29,103 @@ interface Props {
   isAdmin: boolean;
   onNavigate: (page: Page, tab?: string) => void;
 }
+
+const GOLD = "#D4AF37";
+const DARK_GREEN = "#1a4d2e";
+const DARKEST_GREEN = "#0f2d1a";
+
+const quickActions = [
+  {
+    page: "financial" as Page,
+    tab: "income",
+    label: "আয় যোগ করুন",
+    icon: <ArrowUpCircle size={22} />,
+    color: "#166534",
+    bg: "#dcfce7",
+    emoji: "💰",
+    ocid: "dashboard.income.primary_button",
+  },
+  {
+    page: "financial" as Page,
+    tab: "expense",
+    label: "ব্যয় যোগ করুন",
+    icon: <ArrowDownCircle size={22} />,
+    color: "#991b1b",
+    bg: "#fee2e2",
+    emoji: "💸",
+    ocid: "dashboard.expense.primary_button",
+  },
+  {
+    page: "constitution" as Page,
+    tab: undefined,
+    label: "গঠনতন্ত্র দেখুন",
+    icon: <BookOpen size={22} />,
+    color: "#92400e",
+    bg: "#fef3c7",
+    emoji: "📖",
+    ocid: "dashboard.constitution.secondary_button",
+  },
+  {
+    page: "financial" as Page,
+    tab: undefined,
+    label: "আর্থিক হিসাব",
+    icon: <TrendingUp size={22} />,
+    color: "#1e40af",
+    bg: "#dbeafe",
+    emoji: "📊",
+    ocid: "dashboard.financial.secondary_button",
+  },
+  {
+    page: "members" as Page,
+    tab: undefined,
+    label: "সদস্য তালিকা",
+    icon: <Users size={22} />,
+    color: DARK_GREEN,
+    bg: "#d1fae5",
+    emoji: "👥",
+    ocid: "dashboard.members.secondary_button",
+  },
+  {
+    page: "reports" as Page,
+    tab: undefined,
+    label: "রিপোর্ট ডাউনলোড",
+    icon: <FileDown size={22} />,
+    color: "#5b21b6",
+    bg: "#ede9fe",
+    emoji: "📄",
+    ocid: "dashboard.reports.secondary_button",
+  },
+  {
+    page: "blooddonor" as Page,
+    tab: undefined,
+    label: "রক্তদাতা গ্রুপ",
+    icon: <Droplets size={22} />,
+    color: "#991b1b",
+    bg: "#fee2e2",
+    emoji: "🩸",
+    ocid: "dashboard.blooddonor.secondary_button",
+  },
+  {
+    page: "familytree" as Page,
+    tab: undefined,
+    label: "বংশপরম্পরা চার্ট",
+    icon: <GitBranch size={22} />,
+    color: "#065f46",
+    bg: "#d1fae5",
+    emoji: "🌳",
+    ocid: "dashboard.familytree.secondary_button",
+  },
+  {
+    page: "financial" as Page,
+    tab: "quarterly",
+    label: "ত্রৈমাসিক চাঁদা",
+    icon: <Wallet size={22} />,
+    color: "#b45309",
+    bg: "#fef9c3",
+    emoji: "💳",
+    ocid: "dashboard.quarterly.secondary_button",
+  },
+];
 
 export default function DashboardPage({ actor, onNavigate }: Props) {
   const { data: incomeRecords = [] } = useQuery<IncomeRecord[]>({
@@ -66,137 +167,157 @@ export default function DashboardPage({ actor, onNavigate }: Props) {
   const surplus = totalIncome - totalExpense;
 
   return (
-    <div className="space-y-8">
-      {/* Welcome */}
-      <div className="text-center py-6">
-        <h1 className="text-3xl font-extrabold" style={{ color: "#166534" }}>
-          আপন ফাউন্ডেশন
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          ড্যাশবোর্ডে স্বাগতম — সংগঠনের সামগ্রিক চিত্র
-        </p>
+    <div className="space-y-6">
+      {/* Welcome Banner */}
+      <div
+        className="rounded-xl p-6 text-white relative overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${DARK_GREEN} 0%, ${DARKEST_GREEN} 100%)`,
+          boxShadow: "0 6px 24px rgba(15,45,26,0.3)",
+        }}
+      >
+        {/* Decorative circles */}
+        <div
+          className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-5"
+          style={{ background: GOLD, transform: "translate(30%, -30%)" }}
+        />
+        <div
+          className="absolute bottom-0 left-0 w-32 h-32 rounded-full opacity-5"
+          style={{ background: GOLD, transform: "translate(-30%, 30%)" }}
+        />
+        <div className="relative">
+          <div
+            className="text-xs font-semibold uppercase tracking-widest mb-1"
+            style={{ color: "rgba(212,175,55,0.6)" }}
+          >
+            ড্যাশবোর্ড
+          </div>
+          <h1
+            className="text-2xl font-bold mb-1"
+            style={{ color: GOLD, fontFamily: "'Hind Siliguri', sans-serif" }}
+          >
+            আপন ফাউন্ডেশন
+          </h1>
+          <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
+            সংগঠনের সামগ্রিক চিত্র ও দ্রুত কার্যক্রম
+          </p>
+        </div>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card
-          className="border-l-4"
-          style={{ borderLeftColor: "#166534" }}
+          className="border-l-4 overflow-hidden"
+          style={{ borderLeftColor: DARK_GREEN }}
           data-ocid="dashboard.income.card"
         >
-          <CardHeader className="pb-1">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <ArrowUpCircle size={16} style={{ color: "#166534" }} /> মোট আয়
+          <CardHeader className="pb-1 pt-4">
+            <CardTitle className="text-xs text-muted-foreground flex items-center gap-2 uppercase tracking-wide">
+              <ArrowUpCircle size={14} style={{ color: DARK_GREEN }} /> মোট আয়
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold" style={{ color: "#166534" }}>
+          <CardContent className="pb-4">
+            <p className="text-2xl font-bold" style={{ color: DARK_GREEN }}>
               ৳{totalIncome.toLocaleString()}
             </p>
+            <p className="text-xs text-muted-foreground mt-0.5">সর্বমোট আয়</p>
           </CardContent>
         </Card>
 
         <Card
-          className="border-l-4 border-l-red-600"
+          className="border-l-4 border-l-red-600 overflow-hidden"
           data-ocid="dashboard.expense.card"
         >
-          <CardHeader className="pb-1">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <ArrowDownCircle size={16} className="text-red-600" /> মোট ব্যয়
+          <CardHeader className="pb-1 pt-4">
+            <CardTitle className="text-xs text-muted-foreground flex items-center gap-2 uppercase tracking-wide">
+              <ArrowDownCircle size={14} className="text-red-600" /> মোট ব্যয়
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-4">
             <p className="text-2xl font-bold text-red-600">
               ৳{totalExpense.toLocaleString()}
             </p>
+            <p className="text-xs text-muted-foreground mt-0.5">সর্বমোট ব্যয়</p>
           </CardContent>
         </Card>
 
         <Card
-          className="border-l-4 border-l-blue-600"
+          className="border-l-4 overflow-hidden"
+          style={{ borderLeftColor: surplus >= 0 ? "#2563eb" : "#dc2626" }}
           data-ocid="dashboard.surplus.card"
         >
-          <CardHeader className="pb-1">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <TrendingUp size={16} className="text-blue-600" /> উদ্বৃত্ত
+          <CardHeader className="pb-1 pt-4">
+            <CardTitle className="text-xs text-muted-foreground flex items-center gap-2 uppercase tracking-wide">
+              <TrendingUp
+                size={14}
+                style={{ color: surplus >= 0 ? "#2563eb" : "#dc2626" }}
+              />{" "}
+              উদ্বৃত্ত
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-blue-600">
+          <CardContent className="pb-4">
+            <p
+              className="text-2xl font-bold"
+              style={{ color: surplus >= 0 ? "#2563eb" : "#dc2626" }}
+            >
               ৳{surplus.toLocaleString()}
             </p>
+            <p className="text-xs text-muted-foreground mt-0.5">নিট উদ্বৃত্ত</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-base font-semibold mb-3 text-foreground">
-          দ্রুত কার্যক্রম
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <button
-            type="button"
-            onClick={() => onNavigate("financial", "income")}
-            className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed transition-all hover:bg-green-50 hover:border-green-500 group"
-            style={{ borderColor: "#16a34a" }}
-            data-ocid="dashboard.income.primary_button"
+        <div className="flex items-center gap-2 mb-4">
+          <div
+            className="w-1 h-5 rounded-full"
+            style={{
+              background: `linear-gradient(180deg, ${GOLD} 0%, ${DARK_GREEN} 100%)`,
+            }}
+          />
+          <h2
+            className="text-sm font-semibold uppercase tracking-wide"
+            style={{ color: DARK_GREEN }}
           >
-            <div
-              className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl font-bold"
-              style={{ background: "#166534" }}
+            দ্রুত কার্যক্রম
+          </h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {quickActions.map((action) => (
+            <button
+              key={action.ocid}
+              type="button"
+              onClick={() => onNavigate(action.page, action.tab)}
+              className="flex flex-col items-start gap-2 p-4 rounded-xl text-left transition-all hover:shadow-md hover:-translate-y-0.5"
+              style={{
+                background: action.bg,
+                border: `1.5px solid ${action.color}20`,
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor =
+                  `${action.color}60`;
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor =
+                  `${action.color}20`;
+              }}
+              data-ocid={action.ocid}
             >
-              <Wallet size={22} />
-            </div>
-            <span
-              className="text-sm font-semibold"
-              style={{ color: "#166534" }}
-            >
-              💰 আয় যোগ করুন
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onNavigate("financial", "expense")}
-            className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed border-red-400 transition-all hover:bg-red-50 hover:border-red-600 group"
-            data-ocid="dashboard.expense.primary_button"
-          >
-            <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center text-white">
-              <ArrowDownCircle size={22} />
-            </div>
-            <span className="text-sm font-semibold text-red-600">
-              💸 ব্যয় যোগ করুন
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onNavigate("constitution")}
-            className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed border-amber-400 transition-all hover:bg-amber-50 hover:border-amber-600 group"
-            data-ocid="dashboard.constitution.secondary_button"
-          >
-            <div className="w-12 h-12 rounded-full bg-amber-600 flex items-center justify-center text-white">
-              <BookOpen size={22} />
-            </div>
-            <span className="text-sm font-semibold text-amber-700">
-              📖 গঠনতন্ত্র দেখুন
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onNavigate("financial")}
-            className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed border-blue-300 transition-all hover:bg-blue-50 hover:border-blue-500 group"
-            data-ocid="dashboard.financial.secondary_button"
-          >
-            <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white">
-              <TrendingUp size={22} />
-            </div>
-            <span className="text-sm font-semibold text-blue-700">
-              📊 আর্থিক হিসাব দেখুন
-            </span>
-          </button>
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-white"
+                style={{ background: action.color }}
+              >
+                {action.icon}
+              </div>
+              <span
+                className="text-sm font-semibold"
+                style={{ color: action.color }}
+              >
+                {action.emoji} {action.label}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
     </div>

@@ -14,42 +14,42 @@
 @layer base {
   :root {
     --radius: 0.5rem;
-    /* Dark green primary: #1a6b2a → oklch ~0.44 0.14 145 */
-    --background: 0.98 0.002 145;
-    --foreground: 0.15 0.01 145;
+    /* Dark green primary: #1a4d2e → oklch ~0.38 0.12 145 */
+    --background: 0.97 0.004 145;
+    --foreground: 0.15 0.015 145;
     --card: 1 0 0;
-    --card-foreground: 0.15 0.01 145;
+    --card-foreground: 0.15 0.015 145;
     --popover: 1 0 0;
-    --popover-foreground: 0.15 0.01 145;
-    /* primary = dark green #1a6b2a */
-    --primary: 0.44 0.14 145;
+    --popover-foreground: 0.15 0.015 145;
+    /* primary = #1a4d2e */
+    --primary: 0.38 0.12 145;
     --primary-foreground: 1 0 0;
     --secondary: 0.94 0.01 145;
-    --secondary-foreground: 0.3 0.05 145;
+    --secondary-foreground: 0.3 0.06 145;
     --muted: 0.94 0.005 145;
     --muted-foreground: 0.5 0.02 145;
-    /* accent = dark red #8b0000 → oklch ~0.35 0.16 25 */
-    --accent: 0.35 0.16 25;
-    --accent-foreground: 1 0 0;
-    --destructive: 0.35 0.16 25;
+    /* accent = gold #D4AF37 → oklch ~0.75 0.13 85 */
+    --accent: 0.75 0.13 85;
+    --accent-foreground: 0.15 0.015 145;
+    --destructive: 0.35 0.18 25;
     --destructive-foreground: 1 0 0;
-    --border: 0.88 0.008 145;
-    --input: 0.88 0.008 145;
-    --ring: 0.44 0.14 145;
-    --chart-1: 0.44 0.14 145;
-    --chart-2: 0.35 0.16 25;
-    --chart-3: 0.6 0.12 60;
-    --chart-4: 0.7 0.15 200;
-    --chart-5: 0.65 0.13 100;
+    --border: 0.9 0.007 145;
+    --input: 0.9 0.007 145;
+    --ring: 0.38 0.12 145;
+    --chart-1: 0.38 0.12 145;
+    --chart-2: 0.35 0.18 25;
+    --chart-3: 0.75 0.13 85;
+    --chart-4: 0.55 0.14 200;
+    --chart-5: 0.6 0.12 100;
     /* sidebar tokens */
-    --sidebar: 0.25 0.06 145;
-    --sidebar-foreground: 0.92 0.02 145;
-    --sidebar-primary: 0.44 0.14 145;
+    --sidebar: 0.2 0.07 145;
+    --sidebar-foreground: 0.95 0.01 145;
+    --sidebar-primary: 0.38 0.12 145;
     --sidebar-primary-foreground: 1 0 0;
-    --sidebar-accent: 0.35 0.09 145;
+    --sidebar-accent: 0.28 0.07 145;
     --sidebar-accent-foreground: 1 0 0;
-    --sidebar-border: 0.35 0.06 145;
-    --sidebar-ring: 0.44 0.14 145;
+    --sidebar-border: 0.28 0.06 145;
+    --sidebar-ring: 0.38 0.12 145;
   }
 
   * {
@@ -61,8 +61,50 @@
   }
 }
 
+/* ──────────────────────────────────────────
+   Module / Page Utilities
+────────────────────────────────────────── */
+.module-banner {
+  background: linear-gradient(135deg, #1a4d2e 0%, #0f2d1a 100%);
+  border-radius: 12px;
+  padding: 20px 24px;
+  color: white;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 16px rgba(15, 45, 26, 0.25);
+}
+.module-banner h1,
+.module-banner h2 {
+  color: #d4af37;
+  font-family: "Hind Siliguri", sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+}
+.section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d4af37;
+  opacity: 0.7;
+}
+
+/* Consistent dark green table header */
+.green-table-head th {
+  background: #1a4d2e;
+  color: white;
+  font-weight: 600;
+}
+
+/* ──────────────────────────────────────────
+   Print Styles
+────────────────────────────────────────── */
 @media print {
   .no-print {
     display: none !important;
+  }
+  @page {
+    size: A4;
+    margin: 25.4mm;
   }
 }

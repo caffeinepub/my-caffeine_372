@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import ModuleHeader from "../components/ModuleHeader";
 import {
   addAdmin,
   getAdmins,
@@ -129,12 +130,17 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
+      <ModuleHeader
+        title="সেটিং"
+        subtitle="সংগঠনের তথ্য ও এডমিন ব্যবস্থাপনা"
+        icon={<Building2 size={22} />}
+      />
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">সেটিং</h1>
+        <div />
         {hasChanges && (
           <Button
             onClick={handleSave}
-            style={{ background: "#1a6b2a" }}
+            style={{ background: "#1a4d2e" }}
             className="text-white gap-2"
             data-ocid="settings.save_button"
           >
@@ -166,7 +172,7 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
         <TabsContent value="identity" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base" style={{ color: "#1a6b2a" }}>
+              <CardTitle className="text-base" style={{ color: "#1a4d2e" }}>
                 লোগো
               </CardTitle>
             </CardHeader>
@@ -238,7 +244,7 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base" style={{ color: "#1a6b2a" }}>
+              <CardTitle className="text-base" style={{ color: "#1a4d2e" }}>
                 সংগঠনের নাম ও রঙ
               </CardTitle>
             </CardHeader>
@@ -371,7 +377,7 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
         <TabsContent value="contact">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base" style={{ color: "#1a6b2a" }}>
+              <CardTitle className="text-base" style={{ color: "#1a4d2e" }}>
                 যোগাযোগ তথ্য
               </CardTitle>
             </CardHeader>
@@ -429,7 +435,7 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
         <TabsContent value="admin">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base" style={{ color: "#1a6b2a" }}>
+              <CardTitle className="text-base" style={{ color: "#1a4d2e" }}>
                 অ্যাডমিন তথ্য
               </CardTitle>
             </CardHeader>
@@ -452,7 +458,7 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
             {/* Section 1: Super Admin credentials */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base" style={{ color: "#1a6b2a" }}>
+                <CardTitle className="text-base" style={{ color: "#1a4d2e" }}>
                   সুপার এডমিন একাউন্ট
                 </CardTitle>
               </CardHeader>
@@ -528,7 +534,7 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
                   )}
                   <Button
                     type="submit"
-                    style={{ background: "#1a6b2a" }}
+                    style={{ background: "#1a4d2e" }}
                     className="text-white gap-2"
                     data-ocid="settings.sa.save_button"
                   >
@@ -542,7 +548,7 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
             {/* Section 2: Admin list */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-base" style={{ color: "#1a6b2a" }}>
+                <CardTitle className="text-base" style={{ color: "#1a4d2e" }}>
                   এডমিন তালিকা
                 </CardTitle>
                 <Button
@@ -552,7 +558,7 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
                     setShowAddForm((v) => !v);
                     setAddError("");
                   }}
-                  style={{ background: "#1a6b2a" }}
+                  style={{ background: "#1a4d2e" }}
                   className="text-white gap-1.5"
                   data-ocid="settings.add_admin.button"
                 >
@@ -618,7 +624,7 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
                       <Button
                         type="submit"
                         size="sm"
-                        style={{ background: "#1a6b2a" }}
+                        style={{ background: "#1a4d2e" }}
                         className="text-white"
                         data-ocid="settings.add_admin.submit_button"
                       >
@@ -681,7 +687,7 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
       <div className="pb-6">
         <Button
           onClick={handleSave}
-          style={{ background: hasChanges ? "#1a6b2a" : undefined }}
+          style={{ background: hasChanges ? "#1a4d2e" : undefined }}
           className="w-full sm:w-auto text-white gap-2"
           disabled={!hasChanges}
           data-ocid="settings.submit_button"

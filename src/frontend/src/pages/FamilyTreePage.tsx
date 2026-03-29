@@ -22,6 +22,7 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import ModuleHeader from "../components/ModuleHeader";
 
 interface FamilyNode {
   id: string;
@@ -80,7 +81,7 @@ const VIEW_TABS: { key: ViewMode; label: string }[] = [
 ];
 
 const GEN_COLORS = [
-  "#166534",
+  "#1a4d2e",
   "#1e40af",
   "#7c2d12",
   "#4a1d96",
@@ -513,11 +514,11 @@ export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
         <div className="text-center mb-10">
           <div
             className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4"
-            style={{ background: "#dcfce7" }}
+            style={{ background: "#d1fae5" }}
           >
-            <GitBranch size={40} style={{ color: "#166534" }} />
+            <GitBranch size={40} style={{ color: "#1a4d2e" }} />
           </div>
-          <h1 className="text-2xl font-bold mb-2" style={{ color: "#166534" }}>
+          <h1 className="text-2xl font-bold mb-2" style={{ color: "#1a4d2e" }}>
             বংশপরম্পরা চার্ট
           </h1>
           <p className="text-muted-foreground text-sm">
@@ -529,7 +530,7 @@ export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
             <label
               htmlFor="ancestor-input"
               className="block text-sm font-semibold mb-3"
-              style={{ color: "#166534" }}
+              style={{ color: "#1a4d2e" }}
             >
               পূর্বপুরুষের নাম লিখুন
             </label>
@@ -571,7 +572,7 @@ export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
                   setExpandedIds(new Set([root.id]));
                   setModalName("");
                 }}
-                style={{ background: "#166534" }}
+                style={{ background: "#1a4d2e" }}
                 data-ocid="familytree.primary_button"
               >
                 শুরু করুন
@@ -602,23 +603,13 @@ export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
   return (
     <div className="max-w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: "#dcfce7" }}
-          >
-            <GitBranch size={22} style={{ color: "#166534" }} />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold" style={{ color: "#166534" }}>
-              বংশপরম্পরা চার্ট
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              {nodes.length} জন সদস্য · {maxGen + 1} প্রজন্ম
-            </p>
-          </div>
-        </div>
+      <ModuleHeader
+        title="বংশপরম্পরা চার্ট"
+        subtitle={`${nodes.length} জন সদস্য · ${maxGen + 1} প্রজন্ম`}
+        icon={<GitBranch size={22} />}
+      />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div />
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
             <Search
@@ -648,7 +639,7 @@ export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
               size="sm"
               onClick={() => openModal("root")}
               className="h-9 gap-1.5"
-              style={{ background: "#166534" }}
+              style={{ background: "#1a4d2e" }}
               data-ocid="familytree.open_modal_button"
             >
               <Plus size={14} />
@@ -667,7 +658,7 @@ export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
         >
           <span
             className="text-sm font-semibold mr-2"
-            style={{ color: "#166534" }}
+            style={{ color: "#1a4d2e" }}
           >
             নির্বাচিত: {selectedNode.name}
           </span>
@@ -732,7 +723,7 @@ export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
                 ? "text-white"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary"
             }`}
-            style={viewMode === tab.key ? { background: "#166534" } : {}}
+            style={viewMode === tab.key ? { background: "#1a4d2e" } : {}}
             data-ocid={`familytree.${tab.key}.tab`}
           >
             {tab.label}
@@ -976,7 +967,7 @@ export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
             <div>
               <h3
                 className="text-sm font-semibold mb-3"
-                style={{ color: "#166534" }}
+                style={{ color: "#1a4d2e" }}
               >
                 Tree View
               </h3>
@@ -992,7 +983,7 @@ export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
             <div>
               <h3
                 className="text-sm font-semibold mb-3"
-                style={{ color: "#166534" }}
+                style={{ color: "#1a4d2e" }}
               >
                 তালিকা View
               </h3>
@@ -1022,7 +1013,7 @@ export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4">
             <h2
               className="text-base font-bold mb-4"
-              style={{ color: "#166534" }}
+              style={{ color: "#1a4d2e" }}
             >
               {modalMode === "root" && "নতুন পূর্বপুরুষ যোগ করুন"}
               {modalMode === "child" && `সন্তান যোগ করুন — ${selectedNode?.name}`}
@@ -1053,7 +1044,7 @@ export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
               <Button
                 onClick={handleModalSubmit}
                 className="flex-1"
-                style={{ background: "#166534" }}
+                style={{ background: "#1a4d2e" }}
                 data-ocid="familytree.confirm_button"
               >
                 সংরক্ষণ করুন

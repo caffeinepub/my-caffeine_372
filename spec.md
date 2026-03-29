@@ -1,33 +1,33 @@
-# রক্তদাতা গ্রুপ
+# রক্তদাতা গ্রুপ — UI Modernization
 
 ## Current State
-App has a top header bar with a hamburger menu button that opens a Sheet (drawer) from the left. The sidebar has all menu items in a flat list with icons. Colors use the existing CSS primary (dark green). There is no grouping, no search, and no Bengali font in the menu.
+The app has a well-designed menu bar (dark green #0f2d1a / #1a4d2e with gold #D4AF37 accents, Hind Siliguri font, grouped nav, icons). However, the individual page modules (Dashboard, Members, Financial, NoticBoard, etc.) use plain white cards with basic styling that doesn't match the polished menu bar aesthetic.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Google Fonts import for Hind Siliguri (professional Bengali font)
-- Section group headers in sidebar: প্রশাসনিক, তথ্য ও রিপোর্ট, বিশেষ ফিচার, সেটিংস
-- Search box at top of sidebar to filter menu items
-- Sticky positioning for the top header bar
-- Green & gold color scheme in sidebar (deep green background, gold active state)
-- Hover effects on menu items with smooth transitions
-- Better spacing between menu items
+- Consistent page-level header section for each module (with icon + title + description in the green/gold theme)
+- Modern card styling across all pages with subtle gradients, shadows, and border accents
+- Consistent color tokens matching the menu bar: dark green (#1a4d2e, #0f2d1a), gold (#D4AF37), used for headings, icons, active states
+- Section dividers, better spacing, and visual hierarchy throughout all pages
+- Modern dashboard with feature cards for each module
 
 ### Modify
-- Sidebar: add grouped sections with dividers, gold active highlight, hover effects
-- Header: add sticky positioning (position sticky, top-0, z-50)
-- index.css: add Google Fonts import for Hind Siliguri; apply to body
-- Menu items: adequate padding and spacing, no crowding
+- DashboardPage: redesign welcome section and quick action cards to match modern aesthetic
+- App.tsx header: modernize top header bar to match the sidebar theme (dark green/gold)
+- index.css: refine typography and add utility classes for consistent Bengali text rendering
+- All page headers and section titles: use consistent green/gold color scheme
+- Buttons: consistent styling matching the menu bar's active state (gold gradient for primary, green outline for secondary)
+- Card components: subtle left-border accents, hover shadows, modern look
+- Back button: style to match the new theme
 
 ### Remove
-- Nothing removed
+- Mismatched plain white/gray UI elements that clash with the professional menu bar design
+- Inconsistent color usage across pages
 
 ## Implementation Plan
-1. Add Google Fonts import in index.css for Hind Siliguri
-2. Update App.tsx sidebar (Sheet) with:
-   - Search input at top
-   - 4 grouped sections with Bengali labels
-   - Deep green sidebar background with gold active highlight
-   - Smooth hover transitions
-   - Sticky header
+1. Update index.css: Add page-header utility classes, modern card styles, button styles with green/gold theme
+2. Update App.tsx: Modernize the top sticky header (dark green background matching sidebar), style the back button with gold accent
+3. Update DashboardPage.tsx: Modern welcome banner, redesigned stat cards with icons and gradient accents, modern quick-action grid
+4. Apply consistent Bengali-first typography and spacing improvements throughout existing page components via CSS classes
+5. Validate build
