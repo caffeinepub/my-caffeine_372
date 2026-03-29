@@ -1,7 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, Facebook, ImagePlus, Loader2, Share2 } from "lucide-react";
+import {
+  Download,
+  Facebook,
+  ImagePlus,
+  Loader2,
+  Share2,
+  X,
+} from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { loadSettings } from "../store/settingsStore";
@@ -10,26 +17,26 @@ const TEMPLATES = [
   {
     group: "অনুদান প্রচারণা",
     items: [
-      { value: "donation-winter", label: "শীতবস্ত্র বিতরণ", cat: "donation" },
-      { value: "donation-sports", label: "ক্রীড়া উপকরণ বিতরণ", cat: "donation" },
+      { value: "donation-winter", label: "শীতবস্ত্র বিতরণ", cat: "donation-two" },
+      {
+        value: "donation-sports",
+        label: "ক্রীড়া উপকরণ বিতরণ",
+        cat: "donation-two",
+      },
       {
         value: "donation-education",
         label: "শিক্ষা উপকরণ বিতরণ",
-        cat: "donation",
+        cat: "donation-two",
       },
-      { value: "donation-food", label: "খাদ্য/ওষুধ বিতরণ", cat: "donation" },
+      { value: "donation-food", label: "খাদ্য/ওষুধ বিতরণ", cat: "donation-two" },
     ],
   },
   {
     group: "ধর্মীয় শুভেচ্ছা",
     items: [
-      {
-        value: "religious-eid-fitr",
-        label: "ঈদুল ফিতর শুভেচ্ছা",
-        cat: "religious",
-      },
-      { value: "religious-eid-adha", label: "ঈদুল আযহা শুভেচ্ছা", cat: "religious" },
-      { value: "religious-ramadan", label: "রমজান মোবারক", cat: "religious" },
+      { value: "religious-eid-fitr", label: "ঈদুল ফিতর শুভেচ্ছা", cat: "eid" },
+      { value: "religious-eid-adha", label: "ঈদুল আযহা শুভেচ্ছা", cat: "eid" },
+      { value: "religious-ramadan", label: "রমজান মোবারক", cat: "eid" },
     ],
   },
   {
@@ -37,14 +44,14 @@ const TEMPLATES = [
     items: [
       { value: "national-language", label: "মাতৃভাষা দিবস", cat: "national" },
       { value: "national-independence", label: "স্বাধীনতা দিবস", cat: "national" },
-      { value: "national-victory", label: "বিজয় দিবস", cat: "national" },
+      { value: "national-victory", label: "বিজয় দিবস", cat: "victory" },
       { value: "national-mourning", label: "শোক দিবস", cat: "mourning" },
     ],
   },
   {
     group: "বিশেষ ঘোষণা",
     items: [
-      { value: "announce-donation", label: "অনুদান প্রদান", cat: "announcement" },
+      { value: "announce-donation", label: "অনুদান প্রদান", cat: "donation-one" },
       {
         value: "announce-project",
         label: "নতুন প্রকল্প উদ্বোধন",
@@ -66,29 +73,140 @@ const TEMPLATES = [
 ];
 
 type TemplateCat =
-  | "donation"
-  | "religious"
+  | "donation-two"
+  | "donation-one"
+  | "eid"
   | "national"
+  | "victory"
   | "mourning"
   | "announcement"
   | "humanitarian";
 
-const GRADIENTS: Record<TemplateCat, [string, string, string]> = {
-  donation: ["#0d4a1f", "#1a6b3a", "#2d9e5a"],
-  religious: ["#2d1f5e", "#5a3d8c", "#8B6914"],
-  national: ["#8B0000", "#cc2200", "#e63b1f"],
-  mourning: ["#1a1a1a", "#2d2d2d", "#444444"],
-  announcement: ["#0d2a5e", "#1a4a8c", "#2a6bb5"],
-  humanitarian: ["#0d4a40", "#1a6b5e", "#2d9e8a"],
+interface ImageConfig {
+  count: number;
+  label1?: string;
+  label2?: string;
+  instruction: string;
+  style: "watermark" | "clear" | "optional-clear";
+}
+
+const IMAGE_CONFIG: Record<TemplateCat, ImageConfig> = {
+  "donation-two": {
+    count: 2,
+    label1: "দাতার ছবি (বাম পাশে)",
+    label2: "গ্রহীতার ছবি (ডান পাশে)",
+    instruction:
+      "২টি ছবি আপলোড করুন: (১) দাতার ছবি এবং (২) গ্রহীতার ছবি — দুটোই স্পষ্টভাবে প্রদর্শিত হবে।",
+    style: "clear",
+  },
+  "donation-one": {
+    count: 1,
+    label1: "দাতার ছবি (কেন্দ্রে)",
+    instruction:
+      "১টি ছবি আপলোড করুন: দাতার ছবি — বড় বৃত্তাকার ফ্রেমে স্পষ্টভাবে প্রদর্শিত হবে।",
+    style: "clear",
+  },
+  eid: {
+    count: 1,
+    label1: "মসজিদ বা ঈদ সংশ্লিষ্ট ছবি (জলছাপ হিসেবে)",
+    instruction:
+      "১টি ছবি আপলোড করুন (ঐচ্ছিক): মসজিদের মিনার বা ঈদ সংশ্লিষ্ট ছবি — জলছাপ স্টাইলে উপরে দেখাবে।",
+    style: "watermark",
+  },
+  national: {
+    count: 1,
+    label1: "জাতীয় স্মৃতিসৌধ বা প্রতীকী ছবি (জলছাপ হিসেবে)",
+    instruction:
+      "১টি ছবি আপলোড করুন (ঐচ্ছিক): স্মৃতিসৌধ বা জাতীয় প্রতীক — জলছাপ স্টাইলে কেন্দ্রে দেখাবে।",
+    style: "watermark",
+  },
+  victory: {
+    count: 1,
+    label1: "স্মৃতিসৌধের ছবি (জলছাপ হিসেবে)",
+    instruction:
+      "১টি ছবি আপলোড করুন (ঐচ্ছিক): স্মৃতিসৌধের ছবি — কালো শেডে জলছাপ স্টাইলে কেন্দ্রে দেখাবে। বার্তা সাদা/সোনালি রঙে থাকবে।",
+    style: "watermark",
+  },
+  mourning: {
+    count: 1,
+    label1: "শহীদ মিনারের ছবি (জলছাপ হিসেবে)",
+    instruction:
+      "১টি ছবি আপলোড করুন (ঐচ্ছিক): শহীদ মিনারের ছবি — সাদা বর্ডারে জলছাপ স্টাইলে কেন্দ্রে দেখাবে। বার্তা লাল/সাদা রঙে থাকবে।",
+    style: "watermark",
+  },
+  announcement: {
+    count: 1,
+    label1: "প্রাসঙ্গিক ছবি (ঐচ্ছিক)",
+    instruction: "১টি ছবি আপলোড করতে পারেন (ঐচ্ছিক) — স্পষ্টভাবে প্রদর্শিত হবে।",
+    style: "optional-clear",
+  },
+  humanitarian: {
+    count: 1,
+    label1: "প্রেরণাদায়ক ছবি (ঐচ্ছিক)",
+    instruction:
+      "১টি ছবি আপলোড করতে পারেন (ঐচ্ছিক): মানবসেবা বা প্রেরণাদায়ক ছবি — স্পষ্ট ও মর্যাদাপূর্ণভাবে প্রদর্শিত হবে।",
+    style: "optional-clear",
+  },
+};
+
+type BgConfig = { from: string; via: string; to: string; accent: string };
+
+const BG: Record<TemplateCat, BgConfig> = {
+  "donation-two": {
+    from: "#0d4a1f",
+    via: "#1a6b3a",
+    to: "#2d5a1a",
+    accent: "#D4AF37",
+  },
+  "donation-one": {
+    from: "#0d3a4a",
+    via: "#1a5a6b",
+    to: "#1a3a4a",
+    accent: "#D4AF37",
+  },
+  eid: { from: "#2d1f5e", via: "#4a2d8a", to: "#1a0d40", accent: "#D4AF37" },
+  national: {
+    from: "#8B0000",
+    via: "#cc2200",
+    to: "#4a0000",
+    accent: "#00cc44",
+  },
+  victory: {
+    from: "#004d00",
+    via: "#006600",
+    to: "#002200",
+    accent: "#D4AF37",
+  },
+  mourning: {
+    from: "#1a1a1a",
+    via: "#2d2d2d",
+    to: "#0d0d0d",
+    accent: "#ffffff",
+  },
+  announcement: {
+    from: "#0d2a5e",
+    via: "#1a4a8c",
+    to: "#071a3e",
+    accent: "#D4AF37",
+  },
+  humanitarian: {
+    from: "#0d4a40",
+    via: "#1a6b5e",
+    to: "#0d2a26",
+    accent: "#4ade80",
+  },
 };
 
 function getCat(value: string): TemplateCat {
-  for (const g of TEMPLATES) {
-    for (const t of g.items) {
-      if (t.value === value) return t.cat as TemplateCat;
-    }
-  }
+  for (const g of TEMPLATES)
+    for (const t of g.items) if (t.value === value) return t.cat as TemplateCat;
   return "humanitarian";
+}
+
+function getLabel(value: string) {
+  for (const g of TEMPLATES)
+    for (const t of g.items) if (t.value === value) return t.label;
+  return "";
 }
 
 function wrapText(
@@ -138,21 +256,78 @@ function roundRect(
   ctx.closePath();
 }
 
+async function loadImage(src: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+function drawCircularImage(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  cx: number,
+  cy: number,
+  r: number,
+  borderColor: string,
+  borderWidth: number,
+  opacity = 1,
+  grayScale = false,
+) {
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  if (grayScale) {
+    ctx.filter = "grayscale(100%) brightness(0.6)";
+  }
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.drawImage(img, cx - r, cy - r, r * 2, r * 2);
+  ctx.restore();
+  // border
+  ctx.save();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = borderWidth;
+  ctx.shadowColor = borderColor;
+  ctx.shadowBlur = 18;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 export default function SocialMediaPostPage() {
   const [template, setTemplate] = useState("donation-winter");
   const [message, setMessage] = useState("");
   const [caption, setCaption] = useState("");
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [image1, setImage1] = useState<string | null>(null);
+  const [image2, setImage2] = useState<string | null>(null);
   const [cardDataUrl, setCardDataUrl] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const file1Ref = useRef<HTMLInputElement>(null);
+  const file2Ref = useRef<HTMLInputElement>(null);
 
-  function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  const cat = getCat(template);
+  const imgConf = IMAGE_CONFIG[cat];
+
+  function handleImg1(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setUploadedImage(ev.target?.result as string);
+    reader.onload = (ev) => setImage1(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  function handleImg2(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setImage2(ev.target?.result as string);
     reader.readAsDataURL(file);
   }
 
@@ -162,220 +337,325 @@ export default function SocialMediaPostPage() {
       return;
     }
     setGenerating(true);
-    const canvas = canvasRef.current!;
-    const ctx = canvas.getContext("2d")!;
-    const W = 1200;
-    const H = 1200;
-    const cat = getCat(template);
-    const colors = GRADIENTS[cat];
+    try {
+      const canvas = canvasRef.current!;
+      const ctx = canvas.getContext("2d")!;
+      const W = 1200;
+      const H = 1200;
+      const bg = BG[cat];
 
-    // 1. Background gradient
-    const grad = ctx.createLinearGradient(0, 0, W, H);
-    grad.addColorStop(0, colors[0]);
-    grad.addColorStop(0.5, colors[1]);
-    grad.addColorStop(1, colors[2]);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, H);
+      // ─── Background ───────────────────────────────────────────────
+      const grad = ctx.createLinearGradient(0, 0, W, H);
+      grad.addColorStop(0, bg.from);
+      grad.addColorStop(0.5, bg.via);
+      grad.addColorStop(1, bg.to);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
 
-    // 2. Decorative corner circles
-    ctx.globalAlpha = 0.12;
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.arc(0, 0, 320, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(W, H, 320, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(W, 0, 200, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(0, H, 200, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1.0;
-
-    // 3. Dot mesh pattern
-    ctx.globalAlpha = 0.06;
-    ctx.fillStyle = "#ffffff";
-    for (let dx = 30; dx < W; dx += 60) {
-      for (let dy = 30; dy < H; dy += 60) {
+      // Decorative corner circles
+      ctx.globalAlpha = 0.1;
+      ctx.fillStyle = "#ffffff";
+      for (const [ax, ay, ar] of [
+        [0, 0, 320],
+        [W, H, 320],
+        [W, 0, 200],
+        [0, H, 200],
+      ] as [number, number, number][]) {
         ctx.beginPath();
-        ctx.arc(dx, dy, 3, 0, Math.PI * 2);
+        ctx.arc(ax, ay, ar, 0, Math.PI * 2);
         ctx.fill();
       }
-    }
-    ctx.globalAlpha = 1.0;
+      ctx.globalAlpha = 1;
 
-    // 4. Center glow
-    const radGrad = ctx.createRadialGradient(
-      W / 2,
-      H / 2,
-      0,
-      W / 2,
-      H / 2,
-      W * 0.55,
-    );
-    radGrad.addColorStop(0, "rgba(255,255,255,0.1)");
-    radGrad.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = radGrad;
-    ctx.fillRect(0, 0, W, H);
+      // Dot mesh
+      ctx.globalAlpha = 0.05;
+      ctx.fillStyle = "#ffffff";
+      for (let dx = 40; dx < W; dx += 70)
+        for (let dy = 40; dy < H; dy += 70) {
+          ctx.beginPath();
+          ctx.arc(dx, dy, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      ctx.globalAlpha = 1;
 
-    // 5. Gold border
-    ctx.strokeStyle = "#D4AF37";
-    ctx.lineWidth = 10;
-    ctx.strokeRect(5, 5, W - 10, H - 10);
-    ctx.strokeStyle = "rgba(255,255,255,0.3)";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(20, 20, W - 40, H - 40);
+      // Center glow
+      const rg = ctx.createRadialGradient(
+        W / 2,
+        H / 2,
+        0,
+        W / 2,
+        H / 2,
+        W * 0.55,
+      );
+      rg.addColorStop(0, "rgba(255,255,255,0.08)");
+      rg.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = rg;
+      ctx.fillRect(0, 0, W, H);
 
-    // 6. Header bar
-    ctx.shadowColor = "rgba(0,0,0,0.3)";
-    ctx.shadowBlur = 20;
-    ctx.shadowOffsetY = 4;
-    ctx.fillStyle = "rgba(255,255,255,0.93)";
-    roundRect(ctx, 40, 30, W - 80, 165, 16);
-    ctx.fill();
-    ctx.shadowColor = "transparent";
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
+      // Gold outer border
+      ctx.strokeStyle = bg.accent;
+      ctx.lineWidth = 10;
+      ctx.strokeRect(5, 5, W - 10, H - 10);
+      ctx.strokeStyle = "rgba(255,255,255,0.2)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(22, 22, W - 44, H - 44);
 
-    const orgSettings = loadSettings();
+      // ─── Header Bar ───────────────────────────────────────────────
+      ctx.shadowColor = "rgba(0,0,0,0.35)";
+      ctx.shadowBlur = 22;
+      ctx.shadowOffsetY = 5;
+      ctx.fillStyle = "rgba(255,255,255,0.94)";
+      roundRect(ctx, 40, 30, W - 80, 160, 18);
+      ctx.fill();
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
 
-    // 7. Draw logo in header
-    const logoSrc =
-      orgSettings.logoDataUrl ||
-      "/assets/generated/apon-foundation-logo-transparent.dim_200x200.png";
-
-    await new Promise<void>((resolve) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        const cx = 115;
-        const cy = 113;
-        const r = 55;
+      const orgSettings = loadSettings();
+      const logoSrc =
+        orgSettings.logoDataUrl ||
+        "/assets/generated/apon-foundation-logo-transparent.dim_200x200.png";
+      const logoImg = await loadImage(logoSrc);
+      if (logoImg) {
+        const cx = 112;
+        const cy = 110;
+        const r = 52;
         ctx.save();
-        // Circle clip
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.clip();
-        ctx.drawImage(img, cx - r, cy - r, r * 2, r * 2);
+        ctx.drawImage(logoImg, cx - r, cy - r, r * 2, r * 2);
         ctx.restore();
-        // Circle border
         ctx.strokeStyle = "#D4AF37";
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.stroke();
-        resolve();
-      };
-      img.onerror = () => resolve();
-      img.src = logoSrc;
-    });
+      }
 
-    // 8. Org name in header
-    ctx.textAlign = "left";
-    ctx.shadowColor = "transparent";
-    ctx.shadowBlur = 0;
-    const orgName1 = orgSettings.orgName1 || "আপন";
-    const orgName2 = orgSettings.orgName2 || "ফাউন্ডেশন";
-    ctx.font = "bold 58px 'Hind Siliguri', sans-serif";
-    ctx.fillStyle = "#1a6b2a";
-    ctx.fillText(orgName1, 185, 105);
-    const n1w = ctx.measureText(orgName1).width;
-    ctx.fillStyle = "#cc4400";
-    ctx.fillText(`${" "}${orgName2}`, 185 + n1w, 105);
+      const orgName1 = orgSettings.orgName1 || "আপন";
+      const orgName2 = orgSettings.orgName2 || "ফাউন্ডেশন";
+      ctx.textAlign = "left";
+      ctx.font = "bold 54px 'Hind Siliguri', sans-serif";
+      ctx.fillStyle = "#1a6b2a";
+      ctx.fillText(orgName1, 180, 102);
+      const n1w = ctx.measureText(orgName1).width;
+      ctx.fillStyle = "#cc4400";
+      ctx.fillText(` ${orgName2}`, 180 + n1w, 102);
+      ctx.font = "24px 'Hind Siliguri', sans-serif";
+      ctx.fillStyle = "#7b2d00";
+      ctx.fillText(orgSettings.address || "বালীগাঁও, অষ্টগ্রাম, কিশোরগঞ্জ", 180, 145);
 
-    // Address
-    ctx.font = "26px 'Hind Siliguri', sans-serif";
-    ctx.fillStyle = "#7b2d00";
-    ctx.fillText(orgSettings.address || "বালীগাঁও, অষ্টগ্রাম, কিশোরগঞ্জ", 185, 150);
+      // Template badge
+      const tLabel = getLabel(template);
+      ctx.font = "20px 'Hind Siliguri', sans-serif";
+      const bw = ctx.measureText(tLabel).width + 36;
+      ctx.fillStyle = "rgba(212,175,55,0.92)";
+      roundRect(ctx, W - 50 - bw, 75, bw, 36, 18);
+      ctx.fill();
+      ctx.fillStyle = "#1a1a1a";
+      ctx.textAlign = "center";
+      ctx.fillText(tLabel, W - 50 - bw / 2, 99);
 
-    // 9. Template badge (top right)
-    const templateLabel =
-      TEMPLATES.flatMap((g) => g.items).find((t) => t.value === template)
-        ?.label || "";
-    const badgeX = W - 50;
-    const badgeY = 80;
+      // ─── Image area (template-specific) ──────────────────────────
+      const img1 = image1 ? await loadImage(image1) : null;
+      const img2 = image2 ? await loadImage(image2) : null;
 
-    ctx.font = "22px 'Hind Siliguri', sans-serif";
-    const bw2 = ctx.measureText(templateLabel).width + 40;
-    ctx.fillStyle = "rgba(212,175,55,0.95)";
-    roundRect(ctx, badgeX - bw2, badgeY - 28, bw2, 40, 20);
-    ctx.fill();
-    ctx.fillStyle = "#1a1a1a";
-    ctx.textAlign = "center";
-    ctx.fillText(templateLabel, badgeX - bw2 / 2, badgeY);
-    // suppress linter unused var
+      if (cat === "donation-two") {
+        // Donor (left) + Recipient (right) — CLEAR style
+        const r = 160;
+        const y = 420;
+        if (img1)
+          drawCircularImage(ctx, img1, W / 2 - 220, y, r, "#D4AF37", 7, 1);
+        if (img2)
+          drawCircularImage(ctx, img2, W / 2 + 220, y, r, "#22c55e", 7, 1);
+        // Labels under images
+        ctx.font = "24px 'Hind Siliguri', sans-serif";
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = "#D4AF37";
+        ctx.textAlign = "center";
+        if (img1) ctx.fillText("দাতা", W / 2 - 220, y + r + 35);
+        if (img2) {
+          ctx.fillStyle = "#22c55e";
+          ctx.fillText("গ্রহীতা", W / 2 + 220, y + r + 35);
+        }
+        ctx.globalAlpha = 1;
+        // Plus sign between
+        if (img1 && img2) {
+          ctx.font = "bold 48px sans-serif";
+          ctx.fillStyle = "rgba(255,255,255,0.6)";
+          ctx.fillText("+", W / 2, y + 16);
+        }
+      } else if (cat === "donation-one") {
+        // Single donor — CLEAR, large center
+        const r = 200;
+        if (img1) drawCircularImage(ctx, img1, W / 2, 500, r, "#D4AF37", 9, 1);
+        // Golden glow ring
+        if (img1) {
+          ctx.save();
+          const glowRing = ctx.createRadialGradient(
+            W / 2,
+            500,
+            r - 10,
+            W / 2,
+            500,
+            r + 40,
+          );
+          glowRing.addColorStop(0, "rgba(212,175,55,0.5)");
+          glowRing.addColorStop(1, "rgba(212,175,55,0)");
+          ctx.fillStyle = glowRing;
+          ctx.fillRect(0, 0, W, H);
+          ctx.restore();
+        }
+      } else if (cat === "eid") {
+        // Mosque image WATERMARK style — top circular, gold border
+        if (img1) {
+          drawCircularImage(
+            ctx,
+            img1,
+            W / 2,
+            380,
+            170,
+            "#D4AF37",
+            5,
+            0.28,
+            false,
+          );
+        }
+        // "ঈদ মোবারক" center title
+        ctx.font = "bold 96px 'Hind Siliguri', sans-serif";
+        ctx.textAlign = "center";
+        ctx.shadowColor = "rgba(212,175,55,0.8)";
+        ctx.shadowBlur = 30;
+        ctx.fillStyle = "#D4AF37";
+        ctx.fillText("ঈদ মোবারক", W / 2, 600);
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
+      } else if (cat === "victory") {
+        // Watermark style — center, black-shaded
+        if (img1) {
+          drawCircularImage(
+            ctx,
+            img1,
+            W / 2,
+            520,
+            200,
+            "rgba(255,255,255,0.3)",
+            4,
+            0.25,
+            true,
+          );
+        }
+      } else if (cat === "mourning") {
+        // Watermark style — center, white border
+        if (img1) {
+          drawCircularImage(
+            ctx,
+            img1,
+            W / 2,
+            520,
+            200,
+            "#ffffff",
+            5,
+            0.25,
+            true,
+          );
+        }
+      } else if (cat === "national") {
+        // Watermark style
+        if (img1) {
+          drawCircularImage(
+            ctx,
+            img1,
+            W / 2,
+            520,
+            190,
+            "rgba(255,255,255,0.4)",
+            4,
+            0.25,
+            true,
+          );
+        }
+      } else if (cat === "announcement" || cat === "humanitarian") {
+        // Optional clear image
+        if (img1) {
+          const r = 170;
+          drawCircularImage(
+            ctx,
+            img1,
+            W / 2,
+            440,
+            r,
+            "rgba(255,255,255,0.5)",
+            4,
+            1,
+          );
+        }
+      }
 
-    // 10. Uploaded image in body
-    let bodyStartY = 240;
-    if (uploadedImage) {
-      await new Promise<void>((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          const imgW = 500;
-          const imgH = 300;
-          const imgX = (W - imgW) / 2;
-          const imgY = bodyStartY;
-          ctx.shadowColor = "rgba(0,0,0,0.5)";
-          ctx.shadowBlur = 25;
-          ctx.shadowOffsetY = 8;
-          ctx.drawImage(img, imgX, imgY, imgW, imgH);
-          ctx.shadowColor = "transparent";
-          ctx.shadowBlur = 0;
-          ctx.shadowOffsetY = 0;
-          bodyStartY = imgY + imgH + 50;
-          resolve();
-        };
-        img.onerror = () => resolve();
-        img.src = uploadedImage;
-      });
-    }
+      // ─── Main message text ─────────────────────────────────────────
+      let msgColor = "#ffffff";
+      let msgShadow = "rgba(0,0,0,0.6)";
+      if (cat === "victory") {
+        msgColor = "#D4AF37";
+        msgShadow = "rgba(212,175,55,0.5)";
+      }
+      if (cat === "mourning") {
+        msgColor = "#ff4444";
+        msgShadow = "rgba(220,50,50,0.5)";
+      }
 
-    // 11. Main message
-    ctx.textAlign = "center";
-    ctx.shadowColor = "rgba(255,255,255,0.3)";
-    ctx.shadowBlur = 18;
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 58px 'Hind Siliguri', sans-serif";
-    const msgY = bodyStartY + 60;
-    const nextY = wrapText(ctx, message, W / 2, msgY, W - 160, 74);
-    ctx.shadowColor = "transparent";
-    ctx.shadowBlur = 0;
+      let msgY = 700;
+      // For donation-two: push message below the portraits
+      if (cat === "donation-two") msgY = 650;
+      // For donation-one: push message below the big portrait
+      if (cat === "donation-one") msgY = 760;
+      // For eid: push below eid mubarak
+      if (cat === "eid") msgY = 680;
 
-    // 12. Caption
-    if (caption.trim()) {
-      ctx.font = "38px 'Hind Siliguri', sans-serif";
-      ctx.fillStyle = "rgba(255,255,255,0.82)";
-      ctx.shadowColor = "rgba(0,0,0,0.3)";
-      ctx.shadowBlur = 8;
-      wrapText(ctx, caption, W / 2, nextY + 30, W - 200, 54);
+      ctx.textAlign = "center";
+      ctx.font = "bold 62px 'Hind Siliguri', sans-serif";
+      ctx.shadowColor = msgShadow;
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = msgColor;
+      const nextMsgY = wrapText(ctx, message, W / 2, msgY, W - 160, 80);
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
+
+      // Caption
+      if (caption.trim()) {
+        ctx.font = "36px 'Hind Siliguri', sans-serif";
+        ctx.fillStyle = "rgba(255,255,255,0.78)";
+        ctx.shadowColor = "rgba(0,0,0,0.3)";
+        ctx.shadowBlur = 8;
+        wrapText(ctx, caption, W / 2, nextMsgY + 24, W - 200, 52);
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
+      }
+
+      // ─── Footer ───────────────────────────────────────────────────
+      ctx.strokeStyle = "rgba(212,175,55,0.4)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(60, H - 112);
+      ctx.lineTo(W - 60, H - 112);
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      ctx.fillRect(0, H - 110, W, 110);
+      ctx.fillStyle = "#D4AF37";
+      ctx.font = "bold 28px 'Hind Siliguri', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("🌐  facebook.com/aponfoundation.bd", W / 2, H - 62);
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.font = "22px 'Hind Siliguri', sans-serif";
+      ctx.fillText("আপন ফাউন্ডেশন — বালীগাঁও, অষ্টগ্রাম, কিশোরগঞ্জ", W / 2, H - 28);
+
+      setCardDataUrl(canvas.toDataURL("image/png"));
+      toast.success("ফটো কার্ড তৈরি হয়েছে!");
+    } finally {
+      setGenerating(false);
     }
-
-    // 13. Divider line before footer
-    ctx.strokeStyle = "rgba(212,175,55,0.5)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(60, H - 110);
-    ctx.lineTo(W - 60, H - 110);
-    ctx.stroke();
-
-    // 14. Footer
-    ctx.fillStyle = "rgba(0,0,0,0.45)";
-    ctx.fillRect(0, H - 108, W, 108);
-    ctx.fillStyle = "#D4AF37";
-    ctx.font = "bold 28px 'Hind Siliguri', sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("🌐  facebook.com/aponfoundation.bd", W / 2, H - 62);
-    ctx.fillStyle = "rgba(255,255,255,0.55)";
-    ctx.font = "22px 'Hind Siliguri', sans-serif";
-    ctx.fillText("আপন ফাউন্ডেশন — বালীগাঁও, অষ্টগ্রাম, কিশোরগঞ্জ", W / 2, H - 28);
-
-    setCardDataUrl(canvas.toDataURL("image/png"));
-    setGenerating(false);
-    toast.success("ফটো কার্ড তৈরি হয়েছে!");
   }
 
   function downloadCard() {
@@ -398,7 +678,7 @@ export default function SocialMediaPostPage() {
 
   return (
     <div style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-      {/* Page Banner */}
+      {/* Banner */}
       <div
         className="rounded-xl mb-6 px-6 py-5 flex items-center gap-4"
         style={{
@@ -441,14 +721,19 @@ export default function SocialMediaPostPage() {
             ফর্ম পূরণ করুন
           </h2>
 
-          {/* Template */}
+          {/* Template dropdown */}
           <div className="space-y-2">
             <Label style={{ color: "rgba(255,255,255,0.8)" }}>
               টেমপ্লেট নির্বাচন করুন
             </Label>
             <select
               value={template}
-              onChange={(e) => setTemplate(e.target.value)}
+              onChange={(e) => {
+                setTemplate(e.target.value);
+                setImage1(null);
+                setImage2(null);
+                setCardDataUrl(null);
+              }}
               className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
               style={{
                 background: "rgba(255,255,255,0.08)",
@@ -476,6 +761,134 @@ export default function SocialMediaPostPage() {
                 </optgroup>
               ))}
             </select>
+          </div>
+
+          {/* Image upload — dynamic based on template */}
+          <div className="space-y-3">
+            <Label style={{ color: "rgba(255,255,255,0.8)" }}>ছবি আপলোড</Label>
+            {/* Instruction box */}
+            <div
+              className="p-3 rounded-lg text-xs"
+              style={{
+                background: "rgba(212,175,55,0.08)",
+                border: "1px solid rgba(212,175,55,0.25)",
+                color: "rgba(255,255,255,0.7)",
+              }}
+            >
+              📷 {imgConf.instruction}
+            </div>
+
+            {/* Image 1 */}
+            <div>
+              <p
+                className="text-xs mb-1"
+                style={{ color: "rgba(255,255,255,0.5)" }}
+              >
+                {imgConf.label1 ?? "ছবি"}
+              </p>
+              <button
+                type="button"
+                className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all w-full text-left"
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px dashed rgba(212,175,55,0.4)",
+                }}
+                onClick={() => file1Ref.current?.click()}
+              >
+                <ImagePlus size={18} style={{ color: "#D4AF37" }} />
+                <span
+                  className="text-sm"
+                  style={{ color: "rgba(255,255,255,0.6)" }}
+                >
+                  {image1 ? "ছবি নির্বাচিত ✓" : "ছবি নির্বাচন করুন"}
+                </span>
+                <input
+                  ref={file1Ref}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImg1}
+                />
+              </button>
+              {image1 && (
+                <div className="flex items-center gap-2 mt-2">
+                  <img
+                    src={image1}
+                    alt="p1"
+                    className="h-14 w-14 object-cover rounded-full"
+                    style={{ border: "2px solid #D4AF37" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setImage1(null)}
+                    className="p-1 rounded-full"
+                    style={{
+                      color: "#e55",
+                      border: "1px solid rgba(220,80,80,0.4)",
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Image 2 (only for donation-two) */}
+            {imgConf.count === 2 && (
+              <div>
+                <p
+                  className="text-xs mb-1"
+                  style={{ color: "rgba(255,255,255,0.5)" }}
+                >
+                  {imgConf.label2 ?? "দ্বিতীয় ছবি"}
+                </p>
+                <button
+                  type="button"
+                  className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all w-full text-left"
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px dashed rgba(34,197,94,0.4)",
+                  }}
+                  onClick={() => file2Ref.current?.click()}
+                >
+                  <ImagePlus size={18} style={{ color: "#22c55e" }} />
+                  <span
+                    className="text-sm"
+                    style={{ color: "rgba(255,255,255,0.6)" }}
+                  >
+                    {image2 ? "ছবি নির্বাচিত ✓" : "দ্বিতীয় ছবি নির্বাচন করুন"}
+                  </span>
+                  <input
+                    ref={file2Ref}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImg2}
+                  />
+                </button>
+                {image2 && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <img
+                      src={image2}
+                      alt="p2"
+                      className="h-14 w-14 object-cover rounded-full"
+                      style={{ border: "2px solid #22c55e" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setImage2(null)}
+                      className="p-1 rounded-full"
+                      style={{
+                        color: "#e55",
+                        border: "1px solid rgba(220,80,80,0.4)",
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Main message */}
@@ -520,61 +933,7 @@ export default function SocialMediaPostPage() {
             />
           </div>
 
-          {/* Image upload */}
-          <div className="space-y-2">
-            <Label style={{ color: "rgba(255,255,255,0.8)" }}>
-              ছবি আপলোড (ঐচ্ছিক)
-            </Label>
-            <button
-              type="button"
-              className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all w-full text-left"
-              style={{
-                background: "rgba(255,255,255,0.05)",
-                border: "1px dashed rgba(212,175,55,0.4)",
-              }}
-              onClick={() => fileInputRef.current?.click()}
-              data-ocid="socialmedia.upload_button"
-            >
-              <ImagePlus size={20} style={{ color: "#D4AF37" }} />
-              <span
-                className="text-sm"
-                style={{ color: "rgba(255,255,255,0.6)" }}
-              >
-                {uploadedImage ? "ছবি নির্বাচিত হয়েছে ✓" : "ছবি নির্বাচন করুন"}
-              </span>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageUpload}
-                data-ocid="socialmedia.dropzone"
-              />
-            </button>
-            {uploadedImage && (
-              <div className="flex items-center gap-2">
-                <img
-                  src={uploadedImage}
-                  alt="preview"
-                  className="h-16 w-16 object-cover rounded-lg"
-                  style={{ border: "1px solid rgba(212,175,55,0.4)" }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setUploadedImage(null)}
-                  className="text-xs px-2 py-1 rounded"
-                  style={{
-                    color: "#e55",
-                    border: "1px solid rgba(220,80,80,0.4)",
-                  }}
-                >
-                  সরান
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Submit */}
+          {/* Generate button */}
           <Button
             onClick={() => {
               void generateCard();
@@ -608,7 +967,6 @@ export default function SocialMediaPostPage() {
             ফটো কার্ড প্রিভিউ
           </h2>
 
-          {/* Hidden canvas */}
           <canvas
             ref={canvasRef}
             width={1200}
@@ -616,7 +974,6 @@ export default function SocialMediaPostPage() {
             style={{ display: "none" }}
           />
 
-          {/* Preview area */}
           <div
             className="rounded-xl overflow-hidden flex items-center justify-center"
             style={{
@@ -649,7 +1006,6 @@ export default function SocialMediaPostPage() {
             )}
           </div>
 
-          {/* Action buttons */}
           {cardDataUrl && (
             <div
               className="grid grid-cols-2 gap-3"
@@ -688,7 +1044,6 @@ export default function SocialMediaPostPage() {
             </div>
           )}
 
-          {/* Facebook link note */}
           {cardDataUrl && (
             <div
               className="p-3 rounded-lg text-xs"
