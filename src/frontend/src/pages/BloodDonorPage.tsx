@@ -20,6 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Copy,
   Droplets,
+  Link2,
   Phone,
   Search,
   Share2,
@@ -417,6 +418,7 @@ export default function BloodDonorPage({
   const [bloodGroupFilter, setBloodGroupFilter] = useState("সব");
   const [searchBloodGroup, setSearchBloodGroup] = useState("");
   const [registrationOpen, setRegistrationOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [externalDonors, setExternalDonors] =
     useState<ExternalDonor[]>(loadExternalDonors);
   const orgSettings = loadSettings();
@@ -585,7 +587,37 @@ export default function BloodDonorPage({
         </div>
       </div>
 
-      <Tabs defaultValue={defaultTab} className="w-full">
+      {/* Quick Action Buttons */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => {
+            setActiveTab("search");
+          }}
+          className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl text-white font-bold text-base shadow-lg transition-transform hover:scale-105 active:scale-95"
+          style={{
+            background: "linear-gradient(135deg, #dc2626 0%, #991b1b 100%)",
+          }}
+          type="button"
+          data-ocid="blooddonor.btn.search"
+        >
+          <Search size={28} />
+          রক্তদাতা অনুসন্ধান করুন
+        </button>
+        <button
+          onClick={() => setRegistrationOpen(true)}
+          className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl text-white font-bold text-base shadow-lg transition-transform hover:scale-105 active:scale-95"
+          style={{
+            background: "linear-gradient(135deg, #059669 0%, #065f46 100%)",
+          }}
+          type="button"
+          data-ocid="blooddonor.btn.register"
+        >
+          <UserPlus size={28} />
+          রক্তদাতা হিসেবে নিবন্ধন করুন
+        </button>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full grid grid-cols-2">
           <TabsTrigger value="donors" data-ocid="blooddonor.donors.tab">
             <Droplets size={14} className="mr-1.5" />
@@ -641,6 +673,30 @@ export default function BloodDonorPage({
               PDF ডাউনলোড
             </Button>
             <Button
+              variant="outline"
+              onClick={() => {
+                const link = `${window.location.origin}${window.location.pathname}?view=rokto-onusondhan`;
+                navigator.clipboard.writeText(link).catch(() => {});
+                toast.success(
+                  "রক্ত অনুসন্ধান লিংক কপি হয়েছে! সোশ্যাল মিডিয়ায় শেয়ার করুন।",
+                );
+                if (navigator.share) {
+                  navigator
+                    .share({
+                      title: "রক্তদাতা অনুসন্ধান",
+                      text: "আপন ফাউন্ডেশনের রক্তদাতা অনুসন্ধান করুন",
+                      url: link,
+                    })
+                    .catch(() => {});
+                }
+              }}
+              className="whitespace-nowrap"
+              data-ocid="blooddonor.share_search_link.button"
+            >
+              <Link2 size={14} className="mr-1.5" />
+              রক্ত অনুসন্ধান লিংক
+            </Button>
+            <Button
               onClick={() => setRegistrationOpen(true)}
               style={{ background: "#dc2626" }}
               className="whitespace-nowrap"
@@ -650,6 +706,10 @@ export default function BloodDonorPage({
               নিবন্ধন
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground">
+            🔗 "রক্ত অনুসন্ধান লিংক" বাটনে ক্লিক করে সোশ্যাল মিডিয়ায় শেয়ার করুন — যে কেউ
+            রক্তদাতা খুঁজতে পারবেন।
+          </p>
 
           {filteredDonors.length === 0 ? (
             <div

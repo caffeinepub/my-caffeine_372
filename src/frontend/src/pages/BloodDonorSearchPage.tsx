@@ -22,8 +22,8 @@ import {
   MapPin,
   Phone,
   Search,
-  Share2,
   ShieldAlert,
+  Trash2,
   UserPlus,
 } from "lucide-react";
 import { useState } from "react";
@@ -84,6 +84,18 @@ function getMeta(g: string) {
   return BG_META[g] || { color: "#374151", light: "#f9fafb", label: g };
 }
 
+const SESSION_KEY = "apon_admin_session";
+function getIsSuperAdmin(): boolean {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return false;
+    const session = JSON.parse(raw);
+    return session?.role === "superadmin";
+  } catch {
+    return false;
+  }
+}
+
 function loadExternalDonors(): ExternalDonor[] {
   try {
     const raw = localStorage.getItem("bloodDonors_external");
@@ -97,20 +109,36 @@ function saveExternalDonors(donors: ExternalDonor[]) {
   localStorage.setItem("bloodDonors_external", JSON.stringify(donors));
 }
 
-function DonorCard({ donor, idx }: { donor: DonorEntry; idx: number }) {
+function loadHiddenMemberIds(): string[] {
+  try {
+    const raw = localStorage.getItem("bloodDonors_hiddenMemberIds");
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHiddenMemberIds(ids: string[]) {
+  localStorage.setItem("bloodDonors_hiddenMemberIds", JSON.stringify(ids));
+}
+
+function DonorCard({
+  donor,
+  idx,
+  isSuperAdmin,
+  onDelete,
+}: {
+  donor: DonorEntry;
+  idx: number;
+  isSuperAdmin: boolean;
+  onDelete: (id: string) => void;
+}) {
   const meta = getMeta(donor.bloodGroup);
 
-  async function handleShare() {
-    const text = `🩸 রক্তদাতার তথ্য\nনাম: ${donor.name}\nপিতার নাম: ${donor.fatherName}\nমোবাইল: ${donor.mobile}\nঠিকানা: ${donor.address}\nরক্তের গ্রুপ: ${donor.bloodGroup}\n\n— আপন ফাউন্ডেশন, বালীগাঁও, অষ্টগ্রাম, কিশোরগঞ্জ`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "রক্তদাতার তথ্য", text });
-      } catch {
-        /* cancel */
-      }
-    } else {
-      await navigator.clipboard.writeText(text);
-      toast.success("তথ্য ক্লিপবোর্ডে কপি হয়েছে!");
+  function handleDelete() {
+    if (confirm(`"${donor.name}" এর তথ্য মুছে ফেলবেন?`)) {
+      onDelete(donor.id);
+      toast.success("রক্তদাতার তথ্য মুছে ফেলা হয়েছে");
     }
   }
 
@@ -132,14 +160,28 @@ function DonorCard({ donor, idx }: { donor: DonorEntry; idx: number }) {
           >
             {donor.bloodGroup}
           </div>
-          {donor.isFoundationMember && (
-            <span
-              className="text-xs px-2.5 py-1 rounded-full font-semibold"
-              style={{ background: "#e8f5e9", color: "#2e7d32" }}
-            >
-              ✓ সদস্য
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {donor.isFoundationMember && (
+              <span
+                className="text-xs px-2.5 py-1 rounded-full font-semibold"
+                style={{ background: "#e8f5e9", color: "#2e7d32" }}
+              >
+                ✓ সদস্য
+              </span>
+            )}
+            {isSuperAdmin && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border transition-colors hover:bg-red-50"
+                style={{ borderColor: "#fca5a5", color: "#dc2626" }}
+                title="মুছে ফেলুন"
+                data-ocid={`bdsearch.delete.${idx}`}
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* donor info */}
@@ -164,28 +206,16 @@ function DonorCard({ donor, idx }: { donor: DonorEntry; idx: number }) {
           </div>
         </div>
 
-        {/* action buttons */}
-        <div className="flex gap-2">
-          <a
-            href={`tel:${donor.mobile}`}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
-            style={{ background: meta.color }}
-            data-ocid={`bdsearch.call.${idx}`}
-          >
-            <Phone size={14} />
-            {donor.mobile}
-          </a>
-          <button
-            type="button"
-            onClick={handleShare}
-            className="w-10 h-10 flex items-center justify-center rounded-xl border-2 transition-colors hover:opacity-80 flex-shrink-0"
-            style={{ borderColor: `${meta.color}40`, color: meta.color }}
-            data-ocid={`bdsearch.share.${idx}`}
-            title="শেয়ার করুন"
-          >
-            <Share2 size={15} />
-          </button>
-        </div>
+        {/* call button */}
+        <a
+          href={`tel:${donor.mobile}`}
+          className="flex w-full items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          style={{ background: meta.color }}
+          data-ocid={`bdsearch.call.${idx}`}
+        >
+          <Phone size={14} />
+          {donor.mobile}
+        </a>
       </div>
     </div>
   );
@@ -218,21 +248,23 @@ function RegModal({
       !form.address ||
       !form.bloodGroup
     ) {
-      toast.error("সব ঘর পূরণ করুন।");
+      toast.error("সব তথ্য পূরণ করুন");
       return;
     }
     if (!allHealthChecked) {
-      toast.error("স্বাস্থ্য ঘোষণার সকল বিষয়ে সম্মতি দিন।");
+      toast.error("সব স্বাস্থ্য ঘোষণায় সম্মতি দিন");
       return;
     }
-    const donors = loadExternalDonors();
-    donors.push({
+    const newDonor: ExternalDonor = {
       id: Date.now().toString(),
       ...form,
       registeredAt: new Date().toISOString(),
-    });
-    saveExternalDonors(donors);
-    toast.success("নিবন্ধন সফল! আপনি রক্তদাতা গ্রুপে যুক্ত হয়েছেন।");
+    };
+    const updated = [...loadExternalDonors(), newDonor];
+    saveExternalDonors(updated);
+    toast.success(`${form.name} সফলভাবে নিবন্ধিত হয়েছেন!`);
+    onDone();
+    onClose();
     setForm({
       name: "",
       fatherName: "",
@@ -241,62 +273,65 @@ function RegModal({
       bloodGroup: "",
     });
     setHealthChecks(Array(8).fill(false));
-    onDone();
-    onClose();
   }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent
-        className="max-w-md max-h-[90vh] overflow-y-auto"
-        data-ocid="bdsearch.reg.modal"
-      >
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Heart size={18} className="text-red-600" />
-            রক্তদাতা হিসেবে নিবন্ধন করুন
+          <DialogTitle className="flex items-center gap-2 text-red-700">
+            <Heart size={18} />
+            রক্তদাতা হিসেবে নিবন্ধন
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {(
-            [
-              { field: "name", label: "নাম", placeholder: "পূর্ণ নাম" },
-              {
-                field: "fatherName",
-                label: "পিতার নাম",
-                placeholder: "পিতার পূর্ণ নাম",
-              },
-              {
-                field: "mobile",
-                label: "মোবাইল নম্বর",
-                placeholder: "01XXXXXXXXX",
-              },
-              {
-                field: "address",
-                label: "ঠিকানা",
-                placeholder: "গ্রাম, উপজেলা, জেলা",
-              },
-            ] as const
-          ).map(({ field, label, placeholder }) => (
-            <div key={field} className="space-y-1">
-              <Label>{label} *</Label>
-              <Input
-                value={form[field as keyof typeof form]}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, [field]: e.target.value }))
-                }
-                placeholder={placeholder}
-              />
-            </div>
-          ))}
-          <div className="space-y-1">
+          <div className="space-y-2">
+            <Label>নাম *</Label>
+            <Input
+              value={form.name}
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+              placeholder="আপনার পুরো নাম"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>পিতার নাম *</Label>
+            <Input
+              value={form.fatherName}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, fatherName: e.target.value }))
+              }
+              placeholder="পিতার নাম"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>মোবাইল নম্বর *</Label>
+            <Input
+              value={form.mobile}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, mobile: e.target.value }))
+              }
+              placeholder="01XXXXXXXXX"
+              type="tel"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>ঠিকানা *</Label>
+            <Input
+              value={form.address}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, address: e.target.value }))
+              }
+              placeholder="গ্রাম, উপজেলা, জেলা"
+            />
+          </div>
+          <div className="space-y-2">
             <Label>রক্তের গ্রুপ *</Label>
             <Select
               value={form.bloodGroup}
-              onValueChange={(v) => setForm((f) => ({ ...f, bloodGroup: v }))}
+              onValueChange={(v) => setForm((p) => ({ ...p, bloodGroup: v }))}
             >
               <SelectTrigger>
-                <SelectValue placeholder="রক্তের গ্রুপ নির্বাচন করুন" />
+                <SelectValue placeholder="রক্তের গ্রুপ বাছুন" />
               </SelectTrigger>
               <SelectContent>
                 {BLOOD_GROUPS.map((g) => (
@@ -392,7 +427,10 @@ export default function BloodDonorSearchPage({ actor }: Props) {
   const [selectedGroup, setSelectedGroup] = useState("");
   const [externalDonors, setExternalDonors] =
     useState<ExternalDonor[]>(loadExternalDonors);
+  const [hiddenMemberIds, setHiddenMemberIds] =
+    useState<string[]>(loadHiddenMemberIds);
   const [regOpen, setRegOpen] = useState(false);
+  const isSuperAdmin = getIsSuperAdmin();
 
   const logoSrc =
     orgSettings.logoDataUrl ||
@@ -409,7 +447,12 @@ export default function BloodDonorSearchPage({ actor }: Props) {
 
   const allDonors: DonorEntry[] = [
     ...members
-      .filter((m) => m.bloodGroup && m.bloodGroup.trim() !== "")
+      .filter(
+        (m) =>
+          m.bloodGroup &&
+          m.bloodGroup.trim() !== "" &&
+          !hiddenMemberIds.includes(`member-${m.id.toString()}`),
+      )
       .map((m) => ({
         id: `member-${m.id.toString()}`,
         name: m.memberName,
@@ -429,6 +472,20 @@ export default function BloodDonorSearchPage({ actor }: Props) {
       isFoundationMember: false,
     })),
   ];
+
+  function handleDelete(id: string) {
+    if (id.startsWith("ext-")) {
+      const extId = id.slice(4);
+      const updated = externalDonors.filter((d) => d.id !== extId);
+      saveExternalDonors(updated);
+      setExternalDonors(updated);
+    } else {
+      // member donor — add to hidden list
+      const updated = [...hiddenMemberIds, id];
+      saveHiddenMemberIds(updated);
+      setHiddenMemberIds(updated);
+    }
+  }
 
   const results = selectedGroup
     ? allDonors.filter((d) => d.bloodGroup === selectedGroup)
@@ -486,7 +543,7 @@ export default function BloodDonorSearchPage({ actor }: Props) {
               <h1 className="text-3xl sm:text-4xl font-black text-white leading-tight">
                 রক্তদাতা
                 <br />
-                <span className="text-red-200">অনুসন্ধান</span>
+                <span className="text-red-200">অনুসন্ধান করুন</span>
               </h1>
               <p className="text-white/70 text-sm mt-2 leading-relaxed">
                 সঠিক রক্তের গ্রুপ নির্বাচন করুন এবং কাছের দাতার সাথে সরাসরি যোগাযোগ করুন
@@ -516,10 +573,27 @@ export default function BloodDonorSearchPage({ actor }: Props) {
         </div>
       </div>
 
+      {/* super admin notice */}
+      {isSuperAdmin && (
+        <div className="max-w-3xl mx-auto px-5 mt-4">
+          <div
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium"
+            style={{
+              background: "#fef3c7",
+              color: "#92400e",
+              border: "1px solid #fcd34d",
+            }}
+          >
+            <Trash2 size={14} />
+            সুপার অ্যাডমিন মোড সক্রিয় — প্রতিটি কার্ডের উপরে ডিলিট বাটন দেখাচ্ছে
+          </div>
+        </div>
+      )}
+
       {/* ===== MAIN CONTENT ===== */}
       <div className="max-w-3xl mx-auto px-5 -mt-4 pb-12">
         {/* blood group selector card */}
-        <div className="bg-white rounded-3xl shadow-xl p-6 mb-6">
+        <div className="bg-white rounded-3xl shadow-xl p-6 mb-6 mt-8">
           <div className="flex items-center gap-2 mb-5">
             <Search size={18} className="text-red-600" />
             <h2 className="font-bold text-gray-800">রক্তের গ্রুপ নির্বাচন করুন</h2>
@@ -632,7 +706,13 @@ export default function BloodDonorSearchPage({ actor }: Props) {
                 data-ocid="bdsearch.results"
               >
                 {results.map((donor, i) => (
-                  <DonorCard key={donor.id} donor={donor} idx={i + 1} />
+                  <DonorCard
+                    key={donor.id}
+                    donor={donor}
+                    idx={i + 1}
+                    isSuperAdmin={isSuperAdmin}
+                    onDelete={handleDelete}
+                  />
                 ))}
               </div>
             )}
