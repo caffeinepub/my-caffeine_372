@@ -16,6 +16,7 @@ import {
   Bell,
   BookOpen,
   ClipboardList,
+  Download,
   Droplets,
   FileDown,
   GitBranch,
@@ -33,6 +34,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useOfflineQueue, useOnlineStatus } from "./hooks/offlineHooks";
 import { useActor } from "./hooks/useActor";
+import { usePWAInstall } from "./hooks/usePWAInstall";
 import BloodDonorPage from "./pages/BloodDonorPage";
 import BloodDonorRegisterPublicPage from "./pages/BloodDonorRegisterPublicPage";
 import BloodDonorSearchPage from "./pages/BloodDonorSearchPage";
@@ -95,7 +97,36 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
 
   const isOnline = useOnlineStatus();
   const pendingCount = useOfflineQueue();
+  const { isInstallable, promptInstall } = usePWAInstall();
   const prevOnlineRef = useRef(isOnline);
+
+  // Sync logo to service worker for PWA icon
+  useEffect(() => {
+    const settings = loadSettings();
+    if (
+      settings.logoDataUrl &&
+      "serviceWorker" in navigator &&
+      navigator.serviceWorker.controller
+    ) {
+      navigator.serviceWorker.controller.postMessage({
+        type: "UPDATE_LOGO",
+        logoDataUrl: settings.logoDataUrl,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const settings = loadSettings();
+    if (!settings.logoDataUrl) return;
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker?.ready.then((reg) => {
+        reg.active?.postMessage({
+          type: "UPDATE_LOGO",
+          logoDataUrl: settings.logoDataUrl,
+        });
+      });
+    }
+  }, []);
 
   useEffect(() => {
     if (!prevOnlineRef.current && isOnline) {
@@ -281,6 +312,26 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
                 />
                 <span>সিঙ্ক হচ্ছে...</span>
               </div>
+            )}
+            {/* PWA Install Button */}
+            {isInstallable && (
+              <button
+                type="button"
+                onClick={promptInstall}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all"
+                style={{
+                  border: `1px solid ${GOLD}`,
+                  color: GOLD,
+                  background: "transparent",
+                  fontFamily: "'Hind Siliguri', sans-serif",
+                }}
+                data-ocid="nav.install.button"
+                aria-label="অ্যাপ ইন্সটল করুন"
+                title="অ্যাপ ইন্সটল করুন"
+              >
+                <Download size={13} />
+                <span className="hidden sm:inline">ইন্সটল</span>
+              </button>
             )}
             {/* Hamburger - icon only, green theme */}
             <button

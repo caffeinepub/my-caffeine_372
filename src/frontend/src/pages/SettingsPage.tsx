@@ -73,6 +73,15 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
   function handleSave() {
     saveSettings(settings);
     toast.success("সেটিং সংরক্ষণ করা হয়েছে");
+    // Sync new logo to service worker for PWA icon
+    if (settings.logoDataUrl && "serviceWorker" in navigator) {
+      navigator.serviceWorker.ready.then((reg) => {
+        reg.active?.postMessage({
+          type: "UPDATE_LOGO",
+          logoDataUrl: settings.logoDataUrl,
+        });
+      });
+    }
     onSave();
   }
 

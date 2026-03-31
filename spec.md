@@ -1,33 +1,35 @@
-# রক্তদাতা গ্রুপ — UI Modernization
+# রক্তদাতা গ্রুপ
 
 ## Current State
-The app has a well-designed menu bar (dark green #0f2d1a / #1a4d2e with gold #D4AF37 accents, Hind Siliguri font, grouped nav, icons). However, the individual page modules (Dashboard, Members, Financial, NoticBoard, etc.) use plain white cards with basic styling that doesn't match the polished menu bar aesthetic.
+- PWA app with static manifest.json icons pointing to generated image files
+- Organization logo is stored in localStorage via settingsStore as base64 data URL
+- Service worker (sw.js) only does basic asset caching
+- No PWA install prompt UI in the app
+- No connection between uploaded logo and PWA home screen icon
 
 ## Requested Changes (Diff)
 
 ### Add
-- Consistent page-level header section for each module (with icon + title + description in the green/gold theme)
-- Modern card styling across all pages with subtle gradients, shadows, and border accents
-- Consistent color tokens matching the menu bar: dark green (#1a4d2e, #0f2d1a), gold (#D4AF37), used for headings, icons, active states
-- Section dividers, better spacing, and visual hierarchy throughout all pages
-- Modern dashboard with feature cards for each module
+- Service worker message listener for `UPDATE_LOGO` that caches the logo blob at `/dynamic-pwa-icon.png`
+- Service worker fetch interceptor for `/dynamic-pwa-icon.png` to serve cached logo
+- `usePWAInstall` hook: captures `beforeinstallprompt`, tracks install state, sends logo to SW on mount
+- PWA install button in the app header (visible only when installable, not yet installed)
+- Send logo to service worker on app startup and after settings save
 
 ### Modify
-- DashboardPage: redesign welcome section and quick action cards to match modern aesthetic
-- App.tsx header: modernize top header bar to match the sidebar theme (dark green/gold)
-- index.css: refine typography and add utility classes for consistent Bengali text rendering
-- All page headers and section titles: use consistent green/gold color scheme
-- Buttons: consistent styling matching the menu bar's active state (gold gradient for primary, green outline for secondary)
-- Card components: subtle left-border accents, hover shadows, modern look
-- Back button: style to match the new theme
+- `sw.js`: add message handler + fetch interceptor for dynamic icon
+- `manifest.json`: change icon src to `/dynamic-pwa-icon.png` for all sizes
+- `index.html`: change apple-touch-icon href to `/dynamic-pwa-icon.png`
+- `App.tsx`: integrate usePWAInstall hook, show install button in header
+- `SettingsPage.tsx`: after saving logo, post UPDATE_LOGO message to service worker
 
 ### Remove
-- Mismatched plain white/gray UI elements that clash with the professional menu bar design
-- Inconsistent color usage across pages
+- Nothing
 
 ## Implementation Plan
-1. Update index.css: Add page-header utility classes, modern card styles, button styles with green/gold theme
-2. Update App.tsx: Modernize the top sticky header (dark green background matching sidebar), style the back button with gold accent
-3. Update DashboardPage.tsx: Modern welcome banner, redesigned stat cards with icons and gradient accents, modern quick-action grid
-4. Apply consistent Bengali-first typography and spacing improvements throughout existing page components via CSS classes
-5. Validate build
+1. Update `src/frontend/public/sw.js` — add message listener (UPDATE_LOGO) and fetch handler for `/dynamic-pwa-icon.png`
+2. Update `src/frontend/public/manifest.json` — all icon srcs → `/dynamic-pwa-icon.png`
+3. Update `src/frontend/index.html` — apple-touch-icon → `/dynamic-pwa-icon.png`
+4. Create `src/frontend/src/hooks/usePWAInstall.ts` — beforeinstallprompt capture, isInstallable, promptInstall(), sendLogoToSW()
+5. Update `src/frontend/src/App.tsx` — use hook, on mount call sendLogoToSW with current logo, show install button in header when installable
+6. Update `src/frontend/src/pages/SettingsPage.tsx` — after handleSave, post UPDATE_LOGO to navigator.serviceWorker.controller
