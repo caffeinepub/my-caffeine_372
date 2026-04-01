@@ -158,7 +158,18 @@ export enum UserRole {
     user = "user",
     guest = "guest"
 }
+
+export interface FamilyNodeBackend {
+    id: string;
+    name: string;
+    parentId: { __kind__: 'Some'; value: string } | { __kind__: 'None' } | null;
+    generationLevel: bigint;
+}
 export interface backendInterface {
+    deleteFamilyNode(id: string): Promise<void>;
+    getAllFamilyNodes(): Promise<Array<FamilyNodeBackend>>;
+    setAllFamilyNodes(nodes: Array<FamilyNodeBackend>): Promise<void>;
+    upsertFamilyNode(id: string, name: string, parentId: { __kind__: 'Some'; value: string } | { __kind__: 'None' }, generationLevel: bigint): Promise<FamilyNodeBackend>;
     _caffeineStorageBlobIsLive(hash: Uint8Array): Promise<boolean>;
     _caffeineStorageBlobsToDelete(): Promise<Array<Uint8Array>>;
     _caffeineStorageConfirmBlobDeletion(blobs: Array<Uint8Array>): Promise<void>;
@@ -673,6 +684,38 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async deleteFamilyNode(id: string): Promise<void> {
+        await this.actor.deleteFamilyNode(id);
+    }
+    async getAllFamilyNodes(): Promise<Array<FamilyNodeBackend>> {
+        const result = await this.actor.getAllFamilyNodes() as Array<{id: string; name: string; parentId: [] | [string]; generationLevel: bigint}>;
+        return result.map(n => ({
+            id: n.id,
+            name: n.name,
+            parentId: n.parentId.length > 0 ? { __kind__: 'Some' as const, value: n.parentId[0] } : { __kind__: 'None' as const },
+            generationLevel: n.generationLevel,
+        }));
+    }
+    async setAllFamilyNodes(nodes: Array<FamilyNodeBackend>): Promise<void> {
+        const mapped = nodes.map(n => ({
+            id: n.id,
+            name: n.name,
+            parentId: (n.parentId && n.parentId.__kind__ === 'Some') ? [n.parentId.value] as [string] : [] as [],
+            generationLevel: n.generationLevel,
+        }));
+        await this.actor.setAllFamilyNodes(mapped);
+    }
+    async upsertFamilyNode(id: string, name: string, parentId: { __kind__: 'Some'; value: string } | { __kind__: 'None' }, generationLevel: bigint): Promise<FamilyNodeBackend> {
+        const pid = parentId.__kind__ === 'Some' ? [parentId.value] as [string] : [] as [];
+        const result = await this.actor.upsertFamilyNode(id, name, pid, generationLevel) as {id: string; name: string; parentId: [] | [string]; generationLevel: bigint};
+        return {
+            id: result.id,
+            name: result.name,
+            parentId: result.parentId.length > 0 ? { __kind__: 'Some' as const, value: result.parentId[0] } : { __kind__: 'None' as const },
+            generationLevel: result.generationLevel,
+        };
+    }
+
 }
 function from_candid_CouncilMember_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CouncilMember): CouncilMember {
     return from_candid_record_n11(_uploadFile, _downloadFile, value);

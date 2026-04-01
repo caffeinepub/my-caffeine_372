@@ -65,7 +65,17 @@ export enum UserRole {
     user = "user",
     guest = "guest"
 }
+export interface FamilyNodeBackend {
+    id: string;
+    name: string;
+    parentId: { __kind__: 'Some'; value: string } | { __kind__: 'None' } | null;
+    generationLevel: bigint;
+}
 export interface backendInterface {
+    deleteFamilyNode(id: string): Promise<void>;
+    getAllFamilyNodes(): Promise<Array<FamilyNodeBackend>>;
+    setAllFamilyNodes(nodes: Array<FamilyNodeBackend>): Promise<void>;
+    upsertFamilyNode(id: string, name: string, parentId: { __kind__: 'Some'; value: string } | { __kind__: 'None' }, generationLevel: bigint): Promise<FamilyNodeBackend>;
     addChapter(title: string, content: string): Promise<ConstitutionChapter>;
     addExpenseCategory(name: string): Promise<ExpenseCategory>;
     addExpenseRecord(date: string, category: string, recipientName: string, recipientAddress: string, mobile: string, amount: number, proofFileId: string): Promise<ExpenseRecord>;

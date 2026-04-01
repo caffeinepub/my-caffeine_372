@@ -21,7 +21,8 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { backendInterface } from "../backend";
 import ModuleHeader from "../components/ModuleHeader";
 
 interface FamilyNode {
@@ -42,17 +43,15 @@ type ViewMode =
 
 const STORAGE_KEY = "apon_family_tree";
 
-function loadNodes(): FamilyNode[] {
+function loadLocalNodes(): FamilyNode[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
-}
-
-function saveNodes(nodes: FamilyNode[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(nodes));
 }
 
 function getChildren(
@@ -331,8 +330,12 @@ function ListRow({
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
-  const [nodes, setNodes] = useState<FamilyNode[]>(loadNodes);
+export default function FamilyTreePage({
+  actor,
+  isAdmin,
+}: { actor: backendInterface | null | undefined; isAdmin: boolean }) {
+  const [nodes, setNodes] = useState<FamilyNode[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("tree");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -347,9 +350,86 @@ export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
   const [modalError, setModalError] = useState("");
   const modalInputRef = useRef<HTMLInputElement>(null);
 
+  // Load from canister on mount, migrate localStorage if canister empty
+  const loadFromCanister = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      if (!actor) {
+        const local = loadLocalNodes();
+        setNodes(local);
+        setIsLoading(false);
+        return;
+      }
+      const canisterNodes = await actor.getAllFamilyNodes();
+      if (canisterNodes && canisterNodes.length > 0) {
+        const mapped: FamilyNode[] = canisterNodes.map(
+          (n: {
+            id: string;
+            name: string;
+            parentId: { __kind__: string; value?: string } | null;
+            generationLevel: bigint | number;
+          }) => ({
+            id: n.id,
+            name: n.name,
+            parentId:
+              n.parentId &&
+              (n.parentId as { __kind__: string; value?: string }).__kind__ ===
+                "Some"
+                ? ((n.parentId as { __kind__: string; value?: string }).value ??
+                  null)
+                : null,
+            generationLevel: Number(n.generationLevel),
+          }),
+        );
+        setNodes(mapped);
+      } else {
+        // Migration: push localStorage data to canister
+        const local = loadLocalNodes();
+        if (local.length > 0) {
+          setNodes(local);
+          const toSave = local.map((n) => ({
+            id: n.id,
+            name: n.name,
+            parentId: n.parentId
+              ? { __kind__: "Some" as const, value: n.parentId }
+              : { __kind__: "None" as const },
+            generationLevel: BigInt(n.generationLevel),
+          }));
+          if (actor) await actor.setAllFamilyNodes(toSave);
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load family nodes from canister:", err);
+      const local = loadLocalNodes();
+      setNodes(local);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [actor]);
+
   useEffect(() => {
-    saveNodes(nodes);
-  }, [nodes]);
+    loadFromCanister();
+  }, [loadFromCanister]);
+
+  // Save to canister whenever nodes change (but not on initial load)
+  const isFirstLoad = useRef(true);
+  useEffect(() => {
+    if (isLoading) return;
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
+    const toSave = nodes.map((n) => ({
+      id: n.id,
+      name: n.name,
+      parentId: n.parentId
+        ? { __kind__: "Some" as const, value: n.parentId }
+        : { __kind__: "None" as const },
+      generationLevel: BigInt(n.generationLevel),
+    }));
+    if (actor) actor.setAllFamilyNodes(toSave).catch(console.error);
+  }, [nodes, isLoading, actor]);
 
   useEffect(() => {
     if (modalOpen && modalInputRef.current) {
@@ -684,6 +764,17 @@ export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
   }
 
   // ── Render full page ────────────────────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">বংশপরম্পরা ডেটা লোড হচ্ছে...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-full">
       {/* Header */}

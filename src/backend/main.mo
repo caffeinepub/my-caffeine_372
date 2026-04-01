@@ -92,6 +92,14 @@ actor {
     name : Text;
   };
 
+  type FamilyNode = {
+    id : Text;
+    name : Text;
+    parentId : ?Text;
+    generationLevel : Nat;
+  };
+
+
   // ---- Legacy stable vars kept for upgrade compatibility ----
   type LegacyMemberStatus = { #active; #inactive };
   type LegacyMembershipRole = { #member; #volunteer; #board };
@@ -184,6 +192,9 @@ actor {
   // Resolutions
   var nextResolutionId : Nat = 0;
   let resolutionRecords = Map.empty<Nat, ResolutionRecord>();
+
+  // Family Tree
+  let familyNodes = Map.empty<Text, FamilyNode>();
 
   // ===== User Profile functions =====
 
@@ -527,6 +538,40 @@ actor {
     resolutionRecords.add(nextResolutionId, record);
     nextResolutionId += 1;
     record;
+  };
+
+
+  // ===== Family Tree functions =====
+
+  public query func getAllFamilyNodes() : async [FamilyNode] {
+    familyNodes.values().toArray();
+  };
+
+  public shared func upsertFamilyNode(
+    id : Text,
+    name : Text,
+    parentId : ?Text,
+    generationLevel : Nat,
+  ) : async FamilyNode {
+    let node : FamilyNode = {
+      id = id;
+      name = name;
+      parentId = parentId;
+      generationLevel = generationLevel;
+    };
+    familyNodes.add(id, node);
+    node;
+  };
+
+  public shared func deleteFamilyNode(id : Text) : async () {
+    familyNodes.remove(id);
+  };
+
+  public shared func setAllFamilyNodes(nodes : [FamilyNode]) : async () {
+    familyNodes.clear();
+    for (node in nodes.vals()) {
+      familyNodes.add(node.id, node);
+    };
   };
 
   public shared ({ caller }) func deleteResolution(id : Nat) : async () {

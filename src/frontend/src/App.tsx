@@ -703,7 +703,9 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
         {page === "resolution" && (
           <ResolutionPadPage actor={actor} isAdmin={isAdmin} />
         )}
-        {page === "familytree" && <FamilyTreePage isAdmin={isAdmin} />}
+        {page === "familytree" && (
+          <FamilyTreePage actor={actor} isAdmin={isAdmin} />
+        )}
         {page === "reports" && <ReportsPage actor={actor} />}
         {page === "socialmedia" && <SocialMediaPostPage />}
         {page === "blooddonor" && (
