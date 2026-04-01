@@ -496,6 +496,90 @@ export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
     void selectedNode;
   }
 
+  function handleHybridExport() {
+    const win = window.open("", "_blank");
+    if (!win) return;
+
+    const maxGen = nodes.length
+      ? Math.max(...nodes.map((n) => n.generationLevel))
+      : 0;
+    const settingsRaw = localStorage.getItem("apon_settings");
+    const settings = settingsRaw ? JSON.parse(settingsRaw) : {};
+    const orgAddress =
+      (settings.orgAddress as string) || "বালীগাঁও, অষ্টগ্রাম, কিশোরগঞ্জ";
+    const orgLogo = localStorage.getItem("apon_logo") || "";
+
+    // Build tree rows recursively
+    function buildRows(parentId: string | null, depth: number): string {
+      const children = nodes.filter((n) => n.parentId === parentId);
+      if (!children.length) return "";
+      const genColors = [
+        "#1a4d2e",
+        "#1e40af",
+        "#7c2d12",
+        "#4a1d96",
+        "#065f46",
+        "#9d174d",
+        "#1f2937",
+      ];
+      let html = "";
+      for (const node of children) {
+        const color = genColors[node.generationLevel % genColors.length];
+        const pad = depth * 22;
+        const arrow =
+          depth > 0
+            ? '<span style="color:#9ca3af;font-size:10px;margin-right:4px;">└─</span>'
+            : "";
+        const childRows = buildRows(node.id, depth + 1);
+        html += `<div style="padding-left:${pad}px;margin:3px 0;"><div style="display:inline-flex;align-items:center;gap:6px;">${arrow}<span style="background:${color};color:white;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">${node.generationLevel + 1}</span><span style="font-weight:${depth === 0 ? "700" : "500"};font-size:${14 - Math.min(depth, 3)}px;color:#1f2937;">${node.name}</span></div>${childRows}</div>`;
+      }
+      return html;
+    }
+
+    // Build generation list
+    function buildList(): string {
+      const genColors = [
+        "#1a4d2e",
+        "#1e40af",
+        "#7c2d12",
+        "#4a1d96",
+        "#065f46",
+        "#9d174d",
+        "#1f2937",
+      ];
+      let html = "";
+      for (let g = 0; g <= maxGen; g++) {
+        const members = nodes.filter((n) => n.generationLevel === g);
+        const color = genColors[g % genColors.length];
+        html += `<div style="margin-bottom:14px;"><div style="font-weight:700;font-size:12px;color:${color};border-bottom:2px solid ${color};padding-bottom:3px;margin-bottom:7px;">প্রজন্ম ${g + 1} (${members.length} জন)</div>`;
+        for (const node of members) {
+          const parent = node.parentId
+            ? nodes.find((x) => x.id === node.parentId)
+            : null;
+          html += `<div style="display:flex;gap:8px;margin-bottom:5px;padding:5px 8px;background:#f9fafb;border-radius:5px;border-left:3px solid ${color};"><div><div style="font-weight:600;font-size:12px;color:#1f2937;">${node.name}</div><div style="font-size:10px;color:#6b7280;">${parent ? `পিতা/মাতা: ${parent.name}` : "মূল পূর্বপুরুষ"}</div></div></div>`;
+        }
+        html += "</div>";
+      }
+      return html;
+    }
+
+    const treeHTML = buildRows(null, 0);
+    const listHTML = buildList();
+    const logoTag = orgLogo
+      ? `<img src="${orgLogo}" style="width:100%;height:100%;object-fit:cover;" />`
+      : '<span style="font-size:20px;color:#1a4d2e;">আ</span>';
+    const wmTag = orgLogo
+      ? `<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.07;pointer-events:none;z-index:0;width:160mm;height:160mm;"><img src="${orgLogo}" style="width:100%;height:100%;object-fit:contain;border-radius:50%;" /></div>`
+      : "";
+    const today = new Date().toLocaleDateString("bn-BD");
+    const now = new Date().toLocaleString("bn-BD");
+
+    const html = `<!DOCTYPE html><html lang='bn'><head><meta charset='UTF-8'/><title>বংশপরম্পরা হাইব্রিড চার্ট — আপন ফাউন্ডেশন</title><style>@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');@page { size: A4 landscape; margin: 10mm; }* { box-sizing: border-box; margin: 0; padding: 0; }body { font-family: 'Hind Siliguri', Arial, sans-serif; background: #fff; color: #1f2937; -webkit-print-color-adjust: exact; print-color-adjust: exact; }.page { width: 277mm; min-height: 190mm; padding: 8mm; }.header { display:flex; align-items:center; gap:12px; padding-bottom:8px; border-bottom:3px solid #1a4d2e; margin-bottom:10px; }.logo-wrap { width:55px; height:55px; border-radius:50%; overflow:hidden; border:3px solid #1a4d2e; background:#f0fdf4; flex-shrink:0; display:flex; align-items:center; justify-content:center; }.org-info { flex:1; }.bismillah { font-size:13px; color:#1e40af; margin-bottom:2px; }.org-name { font-size:20px; font-weight:700; }.apon { color:#0f766e; }.foundation { color:#b91c1c; }.org-address { font-size:10px; color:#d97706; margin-top:2px; }.doc-title { text-align:right; font-size:17px; font-weight:700; color:#1a4d2e; }.doc-sub { text-align:right; font-size:10px; color:#6b7280; margin-top:2px; }.body-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:4px; position:relative; z-index:1; }.col-title { font-size:12px; font-weight:700; color:#1a4d2e; border-bottom:2px solid #d1fae5; padding-bottom:3px; margin-bottom:7px; }.footer { margin-top:10px; border-top:1px solid #d1fae5; padding-top:5px; display:flex; justify-content:space-between; font-size:9px; color:#9ca3af; position:relative; z-index:1; }.print-btn { background:#1a4d2e; color:white; border:none; padding:9px 24px; border-radius:7px; cursor:pointer; font-size:13px; font-family:'Hind Siliguri',sans-serif; margin:10px auto 0; display:block; }@media print { .print-btn { display:none; } }</style></head><body><div class='page'>${wmTag}<div class='header'><div class='logo-wrap'>${logoTag}</div><div class='org-info'><div class='bismillah'>بسم الله الرحمن الرحيم</div><div class='org-name'><span class='apon'>আপন</span> <span class='foundation'>ফাউন্ডেশন</span></div><div class='org-address'>${orgAddress}</div></div><div><div class='doc-title'>বংশপরম্পরা হাইব্রিড চার্ট</div><div class='doc-sub'>মোট: ${nodes.length} জন | প্রজন্ম: ${maxGen + 1}টি</div><div class='doc-sub'>তারিখ: ${today}</div></div></div><div class='body-grid'><div><div class='col-title'>🌳 বংশ-বৃক্ষ (Tree View)</div><div style='font-size:12px;'>${treeHTML}</div></div><div><div class='col-title'>📋 প্রজন্মভিত্তিক তালিকা</div><div style='font-size:12px;'>${listHTML}</div></div></div><div class='footer'><span>আপন ফাউন্ডেশন — বংশপরম্পরা চার্ট</span><span>মুদ্রণ: ${now}</span><span>পৃষ্ঠা ১</span></div></div><button class='print-btn' onclick='window.print()'>📥 ৮K ল্যান্ডস্কেপ PDF ডাউনলোড করুন</button></body></html>`;
+
+    win.document.write(html);
+    win.document.close();
+  }
+
   const selectedNode = selectedId ? getNodeById(nodes, selectedId) : null;
   const filteredNodes = searchQuery
     ? nodes.filter((n) =>
@@ -963,43 +1047,56 @@ export default function FamilyTreePage({ isAdmin }: { isAdmin: boolean }) {
 
         {/* 7. Hybrid View */}
         {viewMode === "hybrid" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <h3
-                className="text-sm font-semibold mb-3"
-                style={{ color: "#1a4d2e" }}
-              >
-                Tree View
-              </h3>
-              <div className="overflow-x-auto border rounded-lg p-2">
-                <TreeViewComponent
-                  nodes={nodes}
-                  selectedId={selectedId}
-                  onSelect={handleSelect}
-                  searchQuery={searchQuery}
-                />
-              </div>
-            </div>
-            <div>
-              <h3
-                className="text-sm font-semibold mb-3"
-                style={{ color: "#1a4d2e" }}
-              >
-                তালিকা View
-              </h3>
-              <div className="border rounded-lg p-2 max-h-96 overflow-y-auto">
-                {getChildren(nodes, null).map((root) => (
-                  <ListRow
-                    key={root.id}
-                    node={root}
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <h3
+                  className="text-sm font-semibold mb-3"
+                  style={{ color: "#1a4d2e" }}
+                >
+                  Tree View
+                </h3>
+                <div className="overflow-x-auto border rounded-lg p-2">
+                  <TreeViewComponent
                     nodes={nodes}
+                    selectedId={selectedId}
+                    onSelect={handleSelect}
                     searchQuery={searchQuery}
-                    depth={0}
                   />
-                ))}
+                </div>
+              </div>
+              <div>
+                <h3
+                  className="text-sm font-semibold mb-3"
+                  style={{ color: "#1a4d2e" }}
+                >
+                  তালিকা View
+                </h3>
+                <div className="border rounded-lg p-2 max-h-96 overflow-y-auto">
+                  {getChildren(nodes, null).map((root) => (
+                    <ListRow
+                      key={root.id}
+                      node={root}
+                      nodes={nodes}
+                      searchQuery={searchQuery}
+                      depth={0}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+            <div className="mt-4 flex justify-center">
+              <Button
+                onClick={handleHybridExport}
+                className="gap-2 px-6"
+                style={{ background: "#1a4d2e", color: "white" }}
+                data-ocid="familytree.hybrid_pdf_button"
+              >
+                <Download size={16} />
+                ৮K ল্যান্ডস্কেপ PDF ডাউনলোড করুন
+              </Button>
+            </div>
+          </>
         )}
       </div>
 
