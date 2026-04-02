@@ -660,146 +660,6 @@ export default function FamilyTreePage({
     win.document.close();
   }
 
-  function handleTreeExport() {
-    const win = window.open("", "_blank");
-    if (!win) return;
-
-    const settingsRaw = localStorage.getItem("apon_settings");
-    const settings = settingsRaw ? JSON.parse(settingsRaw) : {};
-    const orgAddress =
-      (settings.orgAddress as string) || "বালীগাঁও, অষ্টগ্রাম, কিশোরগঞ্জ";
-    const orgLogo = localStorage.getItem("apon_logo") || "";
-    const today = new Date().toLocaleDateString("bn-BD");
-    const maxGen = nodes.length
-      ? Math.max(...nodes.map((n) => n.generationLevel))
-      : 0;
-
-    const logoTag = orgLogo
-      ? `<img src="${orgLogo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
-      : `<div style="width:100%;height:100%;background:#1a4d2e;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:700;">আ</div>`;
-
-    // Build recursive SVG-style HTML tree
-    function buildTreeHTML(parentId: string | null, depth: number): string {
-      const children = nodes.filter((n) => n.parentId === parentId);
-      if (!children.length) return "";
-      const genColors = [
-        "#1a4d2e",
-        "#1e40af",
-        "#7c2d12",
-        "#4a1d96",
-        "#065f46",
-        "#9d174d",
-        "#92400e",
-        "#0f766e",
-      ];
-      let html = `<div style="display:flex;flex-direction:row;align-items:flex-start;gap:0;justify-content:center;">`;
-      for (const node of children) {
-        const color = genColors[node.generationLevel % genColors.length];
-        const childHTML = buildTreeHTML(node.id, depth + 1);
-        const hasChildren = nodes.some((n) => n.parentId === node.id);
-        html += `<div style="display:flex;flex-direction:column;align-items:center;padding:0 12px;">
-          <div style="background:${color};color:white;border-radius:12px;padding:10px 18px;font-size:18px;font-weight:700;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.25);min-width:100px;text-align:center;position:relative;">
-            <div style="font-size:11px;opacity:0.75;margin-bottom:3px;">প্রজন্ম ${node.generationLevel + 1}</div>
-            ${node.name}
-          </div>
-          ${hasChildren ? `<div style="width:2px;height:28px;background:#6b7280;"></div>` : ""}
-          ${childHTML}
-        </div>`;
-      }
-      html += "</div>";
-      return html;
-    }
-
-    const treeHTML = buildTreeHTML(null, 0);
-
-    const html = `<!DOCTYPE html><html lang='bn'><head>
-<meta charset='UTF-8'/>
-<title>বংশপরম্পরা Tree চার্ট — আপন ফাউন্ডেশন</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
-@page { size: A4 landscape; margin: 8mm; }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'Hind Siliguri', Arial, sans-serif;
-  background: #ffffff;
-  color: #1f2937;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-  width: 277mm;
-  min-height: 190mm;
-}
-.page { width: 277mm; min-height: 190mm; padding: 6mm 8mm; position: relative; }
-.header {
-  display: flex; align-items: center; gap: 14px;
-  padding-bottom: 8px; border-bottom: 4px solid #1a4d2e; margin-bottom: 10px;
-}
-.logo-wrap {
-  width: 64px; height: 64px; border-radius: 50%; overflow: hidden;
-  border: 3px solid #1a4d2e; background: #f0fdf4; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-}
-.org-info { flex: 1; }
-.bismillah { font-size: 15px; color: #1e40af; margin-bottom: 3px; }
-.org-name { font-size: 26px; font-weight: 700; letter-spacing: 1px; }
-.apon { color: #0f766e; }
-.foundation { color: #b91c1c; }
-.org-address { font-size: 12px; color: #d97706; margin-top: 3px; }
-.doc-title { text-align: right; font-size: 22px; font-weight: 700; color: #1a4d2e; }
-.doc-sub { text-align: right; font-size: 11px; color: #6b7280; margin-top: 3px; }
-.watermark {
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  width: 320px; height: 320px; border-radius: 50%; overflow: hidden;
-  opacity: 0.07; pointer-events: none; z-index: 0;
-}
-.tree-container {
-  overflow: visible; padding: 12px 0 8px;
-  display: flex; justify-content: center;
-  position: relative; z-index: 1;
-}
-.footer {
-  margin-top: 8px; border-top: 1px solid #d1fae5;
-  padding-top: 5px; display: flex; justify-content: space-between;
-  font-size: 10px; color: #9ca3af; position: relative; z-index: 1;
-}
-.print-btn {
-  background: linear-gradient(135deg, #1a4d2e, #14532d);
-  color: white; border: none; padding: 12px 36px; border-radius: 10px;
-  cursor: pointer; font-size: 16px; font-family: 'Hind Siliguri', sans-serif;
-  margin: 12px auto 0; display: block; font-weight: 600;
-  box-shadow: 0 4px 16px rgba(26,77,46,0.4);
-}
-@media print { .print-btn { display: none; } }
-</style>
-</head>
-<body>
-<div class='page'>
-  <div class='watermark'>${logoTag}</div>
-  <div class='header'>
-    <div class='logo-wrap'>${logoTag}</div>
-    <div class='org-info'>
-      <div class='bismillah'>بسم الله الرحمن الرحيم</div>
-      <div class='org-name'><span class='apon'>আপন</span> <span class='foundation'>ফাউন্ডেশন</span></div>
-      <div class='org-address'>${orgAddress}</div>
-    </div>
-    <div>
-      <div class='doc-title'>বংশপরম্পরা Tree চার্ট</div>
-      <div class='doc-sub'>মোট: ${nodes.length} জন | প্রজন্ম: ${maxGen + 1}টি</div>
-      <div class='doc-sub'>তারিখ: ${today}</div>
-    </div>
-  </div>
-  <div class='tree-container'>${treeHTML}</div>
-  <div class='footer'>
-    <span>আপন ফাউন্ডেশন | বংশপরম্পরা Tree চার্ট</span>
-    <span>তারিখ: ${today}</span>
-  </div>
-</div>
-<button class='print-btn' onclick="window.print()">📥 8K ল্যান্ডস্কেপ PDF ডাউনলোড করুন</button>
-</body></html>`;
-
-    win.document.write(html);
-    win.document.close();
-  }
-
   const selectedNode = selectedId ? getNodeById(nodes, selectedId) : null;
   const filteredNodes = searchQuery
     ? nodes.filter((n) =>
@@ -1050,28 +910,12 @@ body {
       <div className="bg-white rounded-2xl border border-border shadow-sm p-4 min-h-[300px]">
         {/* 1. Tree View */}
         {viewMode === "tree" && (
-          <>
-            <TreeViewComponent
-              nodes={searchQuery ? filteredNodes : nodes}
-              selectedId={selectedId}
-              onSelect={handleSelect}
-              searchQuery={searchQuery}
-            />
-            <div className="mt-6 flex justify-center">
-              <Button
-                onClick={handleTreeExport}
-                className="gap-2 px-6"
-                style={{
-                  background: "linear-gradient(135deg,#1a4d2e,#14532d)",
-                  color: "white",
-                }}
-                data-ocid="familytree.tree_pdf_button"
-              >
-                <Download size={16} />
-                ৮K/১৬K ল্যান্ডস্কেপ PDF ডাউনলোড করুন
-              </Button>
-            </div>
-          </>
+          <TreeViewComponent
+            nodes={searchQuery ? filteredNodes : nodes}
+            selectedId={selectedId}
+            onSelect={handleSelect}
+            searchQuery={searchQuery}
+          />
         )}
 
         {/* 2. List View */}
