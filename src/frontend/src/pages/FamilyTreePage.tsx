@@ -18,6 +18,7 @@ import {
   Plus,
   Search,
   Trash2,
+  Upload,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -100,24 +101,49 @@ function TreeNode({
   selectedId,
   onSelect,
   searchQuery,
+  maxGen,
 }: {
   node: FamilyNode;
   nodes: FamilyNode[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   searchQuery: string;
+  maxGen: number;
 }) {
   const children = getChildren(nodes, node.id);
   const isSelected = selectedId === node.id;
   const isMatch =
     searchQuery && node.name.toLowerCase().includes(searchQuery.toLowerCase());
 
+  // Generation-based font and padding scaling
+  const genCount = maxGen + 1;
+  const btnSizeClass =
+    genCount <= 4
+      ? "text-sm px-4 py-2"
+      : genCount <= 6
+        ? "text-xs px-3 py-1.5"
+        : "px-2 py-1";
+  const btnFontStyle: React.CSSProperties =
+    genCount <= 6
+      ? {}
+      : genCount <= 8
+        ? { fontSize: "10px" }
+        : { fontSize: "8px" };
+  const genLabelStyle: React.CSSProperties =
+    genCount <= 4
+      ? {}
+      : genCount <= 6
+        ? { fontSize: "10px" }
+        : genCount <= 8
+          ? { fontSize: "8px" }
+          : { fontSize: "7px" };
+
   return (
     <div className="flex flex-col items-center">
       <button
         type="button"
         onClick={() => onSelect(node.id)}
-        className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all whitespace-nowrap ${
+        className={`${btnSizeClass} rounded-lg font-medium border-2 transition-all whitespace-nowrap ${
           isSelected
             ? "border-primary bg-primary text-primary-foreground shadow-lg scale-105"
             : isMatch
@@ -126,11 +152,11 @@ function TreeNode({
         }`}
         style={
           !isSelected
-            ? { borderColor: genColor(node.generationLevel) }
-            : undefined
+            ? { borderColor: genColor(node.generationLevel), ...btnFontStyle }
+            : btnFontStyle
         }
       >
-        <div className="text-xs opacity-70 mb-0.5">
+        <div className="opacity-70 mb-0.5" style={genLabelStyle}>
           প্রজন্ম {node.generationLevel + 1}
         </div>
         {node.name}
@@ -160,6 +186,7 @@ function TreeNode({
                   selectedId={selectedId}
                   onSelect={onSelect}
                   searchQuery={searchQuery}
+                  maxGen={maxGen}
                 />
               </div>
             ))}
@@ -183,6 +210,9 @@ function TreeViewComponent({
 }) {
   const roots = getChildren(nodes, null);
   if (roots.length === 0) return null;
+  const maxGen = nodes.length
+    ? Math.max(...nodes.map((n) => n.generationLevel))
+    : 0;
   return (
     <div className="overflow-x-auto pb-4">
       <div className="flex gap-12 min-w-max p-4 justify-center">
@@ -194,6 +224,7 @@ function TreeViewComponent({
             selectedId={selectedId}
             onSelect={onSelect}
             searchQuery={searchQuery}
+            maxGen={maxGen}
           />
         ))}
       </div>
@@ -674,6 +705,54 @@ export default function FamilyTreePage({
       ? Math.max(...nodes.map((n) => n.generationLevel))
       : 0;
 
+    // Font scaling based on generation count
+    const genCount = maxGen + 1; // maxGen is 0-indexed
+    const nodeFontSize =
+      genCount <= 4 ? 14 : genCount <= 6 ? 12 : genCount <= 8 ? 10 : 8;
+    const genLabelFontSize =
+      genCount <= 4 ? 11 : genCount <= 6 ? 10 : genCount <= 8 ? 8 : 7;
+    const nodePadding =
+      genCount <= 4
+        ? "10px 18px"
+        : genCount <= 6
+          ? "8px 14px"
+          : genCount <= 8
+            ? "6px 10px"
+            : "4px 8px";
+    const nodeMinWidth =
+      genCount <= 4
+        ? "100px"
+        : genCount <= 6
+          ? "80px"
+          : genCount <= 8
+            ? "60px"
+            : "50px";
+    const nodePaddingH =
+      genCount <= 4
+        ? "0 12px"
+        : genCount <= 6
+          ? "0 8px"
+          : genCount <= 8
+            ? "0 5px"
+            : "0 3px";
+    const connectorHeight =
+      genCount <= 4
+        ? "28px"
+        : genCount <= 6
+          ? "20px"
+          : genCount <= 8
+            ? "14px"
+            : "10px";
+    const treeContainerPadding =
+      genCount <= 4 ? "12px 0 8px" : genCount <= 6 ? "8px 0 6px" : "5px 0 4px";
+    const pageMargin = genCount <= 6 ? "8mm" : genCount <= 8 ? "5mm" : "3mm";
+    const treeScale =
+      genCount <= 4 ? 1 : genCount <= 6 ? 0.95 : genCount <= 8 ? 0.88 : 0.8;
+    const nodeWhiteSpace =
+      genCount >= 7
+        ? `white-space:normal;word-break:break-word;max-width:${nodeMinWidth};`
+        : "white-space:nowrap;";
+
     const logoTag = orgLogo
       ? `<img src="${orgLogo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
       : `<div style="width:100%;height:100%;background:#1a4d2e;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:700;">আ</div>`;
@@ -697,12 +776,12 @@ export default function FamilyTreePage({
         const color = genColors[node.generationLevel % genColors.length];
         const childHTML = buildTreeHTML(node.id, depth + 1);
         const hasChildren = nodes.some((n) => n.parentId === node.id);
-        html += `<div style="display:flex;flex-direction:column;align-items:center;padding:0 12px;">
-          <div style="background:${color};color:white;border-radius:12px;padding:10px 18px;font-size:18px;font-weight:700;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.25);min-width:100px;text-align:center;position:relative;">
-            <div style="font-size:11px;opacity:0.75;margin-bottom:3px;">প্রজন্ম ${node.generationLevel + 1}</div>
+        html += `<div style="display:flex;flex-direction:column;align-items:center;padding:${nodePaddingH};">
+          <div style="background:${color};color:white;border-radius:12px;padding:${nodePadding};font-size:${nodeFontSize}px;font-weight:700;${nodeWhiteSpace}box-shadow:0 4px 12px rgba(0,0,0,0.25);min-width:${nodeMinWidth};text-align:center;position:relative;">
+            <div style="font-size:${genLabelFontSize}px;opacity:0.75;margin-bottom:3px;">প্রজন্ম ${node.generationLevel + 1}</div>
             ${node.name}
           </div>
-          ${hasChildren ? `<div style="width:2px;height:28px;background:#6b7280;"></div>` : ""}
+          ${hasChildren ? `<div style="width:2px;height:${connectorHeight};background:#6b7280;"></div>` : ""}
           ${childHTML}
         </div>`;
       }
@@ -717,7 +796,7 @@ export default function FamilyTreePage({
 <title>বংশপরম্পরা Tree চার্ট — আপন ফাউন্ডেশন</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
-@page { size: A4 landscape; margin: 8mm; }
+@page { size: A4 landscape; margin: ${pageMargin}; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: 'Hind Siliguri', Arial, sans-serif;
@@ -752,9 +831,10 @@ body {
   opacity: 0.07; pointer-events: none; z-index: 0;
 }
 .tree-container {
-  overflow: visible; padding: 12px 0 8px;
+  overflow: visible; padding: ${treeContainerPadding};
   display: flex; justify-content: center;
   position: relative; z-index: 1;
+  transform: scale(${treeScale}); transform-origin: top center;
 }
 .footer {
   margin-top: 8px; border-top: 1px solid #d1fae5;
@@ -810,6 +890,62 @@ body {
   const maxGen = nodes.length
     ? Math.max(...nodes.map((n) => n.generationLevel))
     : 0;
+
+  // ── Backup / Restore ──────────────────────────────────────────────────────
+  const importFileRef = useRef<HTMLInputElement>(null);
+
+  const handleBackup = () => {
+    const data = JSON.stringify(
+      { version: 1, nodes, exportedAt: new Date().toISOString() },
+      null,
+      2,
+    );
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "bongshoporompara-backup.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if (!parsed.nodes || !Array.isArray(parsed.nodes))
+        throw new Error("Invalid format");
+      const validated = parsed.nodes.filter(
+        (n: unknown) =>
+          n &&
+          typeof n === "object" &&
+          "id" in (n as object) &&
+          "name" in (n as object) &&
+          "parentId" in (n as object) &&
+          "generationLevel" in (n as object),
+      ) as FamilyNode[];
+      if (validated.length === 0) throw new Error("No valid nodes found");
+      setNodes(validated);
+      if (actor) {
+        const toSave = validated.map((n) => ({
+          id: n.id,
+          name: n.name,
+          generationLevel: n.generationLevel,
+          parentId: n.parentId
+            ? { __kind__: "Some" as const, value: n.parentId }
+            : { __kind__: "None" as const },
+        }));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await actor.setAllFamilyNodes(toSave as any);
+      }
+      alert(`✅ ${validated.length} জন সদস্যের ডেটা সফলভাবে পুনরুদ্ধার করা হয়েছে!`);
+    } catch {
+      alert("❌ ফাইলটি সঠিক নয়। দয়া করে একটি বৈধ ব্যাকআপ ফাইল নির্বাচন করুন।");
+    }
+    if (importFileRef.current) importFileRef.current.value = "";
+  };
 
   // ── Render empty state ──────────────────────────────────────────────────────
   if (nodes.length === 0) {
@@ -949,6 +1085,39 @@ body {
             <Download size={14} />
             PDF
           </Button>
+          {nodes.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBackup}
+              className="h-9 gap-1.5 border-green-600 text-green-700 hover:bg-green-50"
+              data-ocid="familytree.secondary_button"
+            >
+              <Download size={14} />
+              ব্যাকআপ
+            </Button>
+          )}
+          {isAdmin && (
+            <>
+              <input
+                ref={importFileRef}
+                type="file"
+                accept=".json"
+                className="hidden"
+                onChange={handleRestore}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => importFileRef.current?.click()}
+                className="h-9 gap-1.5 border-amber-500 text-amber-700 hover:bg-amber-50"
+                data-ocid="familytree.upload_button"
+              >
+                <Upload size={14} />
+                রিস্টোর
+              </Button>
+            </>
+          )}
           {isAdmin && (
             <Button
               size="sm"
@@ -963,6 +1132,23 @@ body {
           )}
         </div>
       </div>
+
+      {/* Data loss warning for admin when empty */}
+      {isAdmin && nodes.length === 0 && (
+        <div
+          className="mb-4 p-4 rounded-xl border text-sm"
+          style={{
+            background: "#fffbeb",
+            borderColor: "#f59e0b",
+            color: "#92400e",
+          }}
+          data-ocid="familytree.error_state"
+        >
+          <strong>⚠️ ডেটা হারিয়ে গেছে?</strong> নতুন ভার্সন ডিপ্লয়মেন্টের পর ডেটা মুছে
+          যেতে পারে। আগে যদি ব্যাকআপ (.json) ফাইল রেখে থাকেন, তাহলে উপরের{" "}
+          <strong>"রিস্টোর"</strong> বাটন ব্যবহার করে পুনরুদ্ধার করুন।
+        </div>
+      )}
 
       {/* Admin Action Bar for selected node */}
       {isAdmin && selectedNode && (
