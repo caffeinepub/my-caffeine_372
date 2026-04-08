@@ -23,12 +23,14 @@ import {
   Home,
   Lock,
   Menu,
+  RefreshCw,
   Search,
   Settings,
   Share2,
   Users,
   Wallet,
   WifiOff,
+  X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -94,11 +96,51 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
   const [settingsVersion, setSettingsVersion] = useState(0);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [menuSearch, setMenuSearch] = useState("");
+  const [showUpdateBanner, setShowUpdateBanner] = useState(false);
 
   const isOnline = useOnlineStatus();
   const pendingCount = useOfflineQueue();
   const { isInstallable, promptInstall } = usePWAInstall();
   const prevOnlineRef = useRef(isOnline);
+
+  // Service Worker update detection
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+
+    // Listen for SW_UPDATED message from service worker
+    const handleSWMessage = (event: MessageEvent) => {
+      if (event.data?.type === "SW_UPDATED") {
+        setShowUpdateBanner(true);
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", handleSWMessage);
+
+    // Check for SW updates when page becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        navigator.serviceWorker.ready
+          .then((reg) => reg.update())
+          .catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Periodic update check every 30 minutes
+    const updateInterval = setInterval(
+      () => {
+        navigator.serviceWorker.ready
+          .then((reg) => reg.update())
+          .catch(() => {});
+      },
+      30 * 60 * 1000,
+    );
+
+    return () => {
+      navigator.serviceWorker.removeEventListener("message", handleSWMessage);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      clearInterval(updateInterval);
+    };
+  }, []);
 
   // Sync logo to service worker for PWA icon
   useEffect(() => {
@@ -254,10 +296,62 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* PWA Update Banner */}
+      {showUpdateBanner && (
+        <div
+          className="no-print fixed top-0 left-0 right-0 z-[100] flex items-center justify-between gap-3 px-4 py-3"
+          style={{
+            background: "linear-gradient(90deg, #0f2d1a 0%, #1a4d2e 100%)",
+            borderBottom: "2px solid #D4AF37",
+            boxShadow: "0 4px 16px rgba(15,45,26,0.6)",
+          }}
+          data-ocid="update.banner"
+        >
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <RefreshCw size={16} style={{ color: "#D4AF37", flexShrink: 0 }} />
+            <p
+              className="text-sm font-medium truncate"
+              style={{
+                color: "#f5e6c8",
+                fontFamily: "'Hind Siliguri', sans-serif",
+              }}
+            >
+              নতুন আপডেট পাওয়া গেছে! সর্বশেষ সংস্করণ পেতে রিফ্রেশ করুন।
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+              style={{
+                background: "#D4AF37",
+                color: "#0f2d1a",
+                fontFamily: "'Hind Siliguri', sans-serif",
+              }}
+              data-ocid="update.reload_button"
+            >
+              <RefreshCw size={12} />
+              এখনই আপডেট করুন
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowUpdateBanner(false)}
+              className="flex items-center justify-center w-7 h-7 rounded-full transition-all hover:bg-white/10"
+              style={{ color: "rgba(255,255,255,0.6)" }}
+              aria-label="বন্ধ করুন"
+              data-ocid="update.dismiss_button"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
       {/* Sticky Header */}
       <header
         className="no-print sticky top-0 z-50"
         style={{
+          marginTop: showUpdateBanner ? "52px" : undefined,
           background: "linear-gradient(135deg, #1a4d2e 0%, #0f2d1a 100%)",
           boxShadow: "0 2px 12px rgba(15,45,26,0.35)",
         }}
@@ -714,6 +808,7 @@ function MainApp({ actor }: { actor: ReturnType<typeof useActor>["actor"] }) {
         {page === "settings" && isAdmin && (
           <SettingsPage
             isSuperAdmin={isSuperAdmin}
+            actor={actor}
             onSave={() => {
               setPage("dashboard");
               setSettingsVersion((v) => v + 1);

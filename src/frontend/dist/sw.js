@@ -1,4 +1,5 @@
-const CACHE_NAME = 'apon-foundation-v2';
+const VERSION = 'v59-2026';
+const CACHE_NAME = `apon-foundation-${VERSION}`;
 const ICON_CACHE = 'pwa-icon-v1';
 const STATIC_ASSETS = ['/', '/index.html'];
 
@@ -15,7 +16,14 @@ self.addEventListener('activate', (event) => {
           .filter((name) => name !== CACHE_NAME && name !== ICON_CACHE)
           .map((name) => caches.delete(name))
       )
-    )
+    ).then(() => {
+      // Notify all clients that a new version is active
+      return self.clients.matchAll({ includeUncontrolled: true }).then((clients) => {
+        for (const client of clients) {
+          client.postMessage({ type: 'SW_UPDATED', version: VERSION });
+        }
+      });
+    })
   );
   self.clients.claim();
 });

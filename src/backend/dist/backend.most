@@ -1,0 +1,229 @@
+// Version: 1.0.0
+type ConstitutionChapter__96777576 =
+  {chapterNumber : Nat; content : Text; id : Nat; title : Text};
+type CouncilMember__378924414 =
+  {
+    bloodGroup : Text;
+    council : Council__465630247;
+    currentAddress : Text;
+    designation : Text;
+    email : Text;
+    fatherName : Text;
+    id : Nat;
+    memberName : Text;
+    mobile : Text;
+    permanentAddress : Text;
+    serialNumber : Nat
+  };
+type Council__465630247 =
+  {#karyanirbahaParishad; #sadharanParishad; #upadeshataParishad};
+type Data__159895909<T> = {var count : Nat__490723111; elements : [var ?T]};
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type ExpenseCategory__184047055 = {id : Nat; name : Text};
+type ExpenseRecord__80229234 =
+  {
+    amount : Float;
+    category : Text;
+    date : Text;
+    id : Nat;
+    mobile : Text;
+    proofFileId : Text;
+    recipientAddress : Text;
+    recipientName : Text;
+    serialNumber : Nat
+  };
+type FamilyNode__511079230 =
+  {generationLevel : Nat; id : Text; name : Text; parentId : ?Text};
+type IncomeRecord__839605142 =
+  {
+    amount : Float;
+    category : Text;
+    date : Text;
+    designation : Text;
+    donorAddress : Text;
+    donorName : Text;
+    id : Nat;
+    mobile : Text;
+    serialNumber : Nat
+  };
+type Internal__667636161<T> =
+  {children : [var ?Node__92254746<T>]; data : Data__159895909<T>};
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type Leaf__520550824<T> = {data : Data__159895909<T>};
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type LegacyDonationCategory__897573111 = {#cash; #grant; #inKind};
+type LegacyDonation__1056579205 =
+  {
+    amount : Float;
+    category : LegacyDonationCategory__897573111;
+    date : Int;
+    donorName : Text;
+    id : Nat;
+    memberId : ?Principal;
+    notes : Text
+  };
+type LegacyEventStatus__283105725 =
+  {#cancelled; #completed; #ongoing; #upcoming};
+type LegacyEvent__520502669 =
+  {
+    date : Int;
+    description : Text;
+    id : Nat;
+    location : Text;
+    maxAttendees : Nat;
+    registeredAttendees : Set__532252804<Principal>;
+    status : LegacyEventStatus__283105725;
+    title : Text
+  };
+type LegacyMemberStatus__858330631 = {#active; #inactive};
+type LegacyMember__302821982 =
+  {
+    email : Text;
+    id : Principal;
+    joinDate : Int;
+    name : Text;
+    notes : Text;
+    phone : Text;
+    role : LegacyMembershipRole__154487214;
+    status : LegacyMemberStatus__858330631
+  };
+type LegacyMembershipRole__154487214 = {#board; #member; #volunteer};
+type LegacyProjectStatus__304367471 =
+  {#active; #completed; #onHold; #planning};
+type LegacyProject__350113217 =
+  {
+    budget : Float;
+    description : Text;
+    endDate : Int;
+    id : Nat;
+    spent : Float;
+    startDate : Int;
+    status : LegacyProjectStatus__304367471;
+    title : Text
+  };
+type Map__158565046<K, V> = Map__297112838<K, V>;
+type Map__297112838<K, V> =
+  {var root : Node__46230540<K, V>; var size : Nat__490723111};
+type Map__605269027<K, V> = Map__158565046<K, V>;
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type Node__92254746<T> =
+  {#internal : Internal__667636161<T>; #leaf : Leaf__520550824<T>};
+type NoticeRecord__19565744 =
+  {
+    authority : Text;
+    body : Text;
+    date : Text;
+    id : Nat;
+    noticeNo : Text;
+    savedAt : Text;
+    title : Text
+  };
+type ResolutionRecord__503458042 =
+  {
+    attendees : Text;
+    date : Text;
+    id : Nat;
+    meetingType : Text;
+    presiding : Text;
+    resNo : Text;
+    resolutions : Text;
+    savedAt : Text;
+    secretary : Text;
+    venue : Text
+  };
+type Set__532252804<T> = Set__710576254<T>;
+type Set__710576254<T> =
+  {var root : Node__92254746<T>; var size : Nat__490723111};
+type UserProfile__491224006 = {name : Text};
+type UserRole__1054455867 = {#admin; #guest; #user};
+actor {
+  stable accessControlState :
+    {
+      var adminAssigned : Bool;
+      userRoles : Map__605269027<Principal, UserRole__1054455867>
+    };
+  stable chapters :
+    {
+      var root : Node__46230540<Nat, ConstitutionChapter__96777576>;
+      var size : Nat__490723111
+    };
+  stable councilMembers :
+    {
+      var root : Node__46230540<Nat, CouncilMember__378924414>;
+      var size : Nat__490723111
+    };
+  stable donations :
+    {
+      var root : Node__46230540<Nat, LegacyDonation__1056579205>;
+      var size : Nat__490723111
+    };
+  stable events :
+    {
+      var root : Node__46230540<Nat, LegacyEvent__520502669>;
+      var size : Nat__490723111
+    };
+  stable expenseCategories :
+    {
+      var root : Node__46230540<Nat, ExpenseCategory__184047055>;
+      var size : Nat__490723111
+    };
+  stable expenseRecords :
+    {
+      var root : Node__46230540<Nat, ExpenseRecord__80229234>;
+      var size : Nat__490723111
+    };
+  stable familyNodes :
+    {
+      var root : Node__46230540<Text, FamilyNode__511079230>;
+      var size : Nat__490723111
+    };
+  stable incomeRecords :
+    {
+      var root : Node__46230540<Nat, IncomeRecord__839605142>;
+      var size : Nat__490723111
+    };
+  stable members :
+    {
+      var root : Node__46230540<Principal, LegacyMember__302821982>;
+      var size : Nat__490723111
+    };
+  stable var nextCategoryId : Nat;
+  stable var nextChapterId : Nat;
+  stable var nextChapterNumber : Nat;
+  stable var nextDonationId : Nat;
+  stable var nextEventId : Nat;
+  stable var nextExpenseId : Nat;
+  stable var nextExpenseSerial : Nat;
+  stable var nextId : Nat;
+  stable var nextIncomeId : Nat;
+  stable var nextIncomeSerial : Nat;
+  stable var nextNoticeId : Nat;
+  stable var nextProjectId : Nat;
+  stable var nextResolutionId : Nat;
+  stable var nextSerial : Nat;
+  stable noticeRecords :
+    {
+      var root : Node__46230540<Nat, NoticeRecord__19565744>;
+      var size : Nat__490723111
+    };
+  stable projects :
+    {
+      var root : Node__46230540<Nat, LegacyProject__350113217>;
+      var size : Nat__490723111
+    };
+  stable resolutionRecords :
+    {
+      var root : Node__46230540<Nat, ResolutionRecord__503458042>;
+      var size : Nat__490723111
+    };
+  stable userProfiles :
+    {
+      var root : Node__46230540<Principal, UserProfile__491224006>;
+      var size : Nat__490723111
+    }
+};

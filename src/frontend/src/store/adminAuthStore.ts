@@ -31,17 +31,46 @@ function saveAccounts(accounts: AdminAccount[]): void {
   localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
 }
 
+export const DEFAULT_SUPER_ADMIN_EMAIL = "admin@aponfoundation.org";
+export const DEFAULT_SUPER_ADMIN_PASSWORD = "Apon@2024";
+
 export function initAdminStore(): void {
   const accounts = getAccounts();
   if (accounts.length === 0) {
     saveAccounts([
       {
-        email: "admin@aponfoundation.org",
-        passwordHash: hashPassword("admin123"),
+        email: DEFAULT_SUPER_ADMIN_EMAIL,
+        passwordHash: hashPassword(DEFAULT_SUPER_ADMIN_PASSWORD),
         role: "superadmin",
       },
     ]);
   }
+}
+
+export function resetSuperAdminToDefault(): void {
+  const accounts = getAccounts();
+  const idx = accounts.findIndex((a) => a.role === "superadmin");
+  if (idx === -1) {
+    saveAccounts([
+      ...accounts,
+      {
+        email: DEFAULT_SUPER_ADMIN_EMAIL,
+        passwordHash: hashPassword(DEFAULT_SUPER_ADMIN_PASSWORD),
+        role: "superadmin",
+      },
+    ]);
+  } else {
+    accounts[idx] = {
+      ...accounts[idx],
+      email: DEFAULT_SUPER_ADMIN_EMAIL,
+      passwordHash: hashPassword(DEFAULT_SUPER_ADMIN_PASSWORD),
+    };
+    saveAccounts(accounts);
+  }
+  localStorage.setItem(
+    SESSION_KEY,
+    JSON.stringify({ email: DEFAULT_SUPER_ADMIN_EMAIL, role: "superadmin" }),
+  );
 }
 
 export function loginAdmin(

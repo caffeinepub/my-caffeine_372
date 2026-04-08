@@ -44,6 +44,12 @@ export interface ExpenseRecord {
   'amount' : number,
   'recipientName' : string,
 }
+export interface FamilyNode {
+  'id' : string,
+  'name' : string,
+  'parentId' : [] | [string],
+  'generationLevel' : bigint,
+}
 export interface IncomeRecord {
   'id' : bigint,
   'date' : string,
@@ -55,38 +61,62 @@ export interface IncomeRecord {
   'mobile' : string,
   'amount' : number,
 }
+export interface NoticeRecord {
+  'id' : bigint,
+  'title' : string,
+  'body' : string,
+  'date' : string,
+  'savedAt' : string,
+  'authority' : string,
+  'noticeNo' : string,
+}
+export interface ResolutionRecord {
+  'id' : bigint,
+  'resolutions' : string,
+  'venue' : string,
+  'date' : string,
+  'meetingType' : string,
+  'secretary' : string,
+  'attendees' : string,
+  'savedAt' : string,
+  'presiding' : string,
+  'resNo' : string,
+}
 export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
-export interface _CaffeineStorageCreateCertificateResult {
+export interface _ImmutableObjectStorageCreateCertificateResult {
   'method' : string,
   'blob_hash' : string,
 }
-export interface _CaffeineStorageRefillInformation {
+export interface _ImmutableObjectStorageRefillInformation {
   'proposed_top_up_amount' : [] | [bigint],
 }
-export interface _CaffeineStorageRefillResult {
+export interface _ImmutableObjectStorageRefillResult {
   'success' : [] | [boolean],
   'topped_up_amount' : [] | [bigint],
 }
 export interface _SERVICE {
-  '_caffeineStorageBlobIsLive' : ActorMethod<[Uint8Array], boolean>,
-  '_caffeineStorageBlobsToDelete' : ActorMethod<[], Array<Uint8Array>>,
-  '_caffeineStorageConfirmBlobDeletion' : ActorMethod<
+  '_immutableObjectStorageBlobsAreLive' : ActorMethod<
+    [Array<Uint8Array>],
+    Array<boolean>
+  >,
+  '_immutableObjectStorageBlobsToDelete' : ActorMethod<[], Array<Uint8Array>>,
+  '_immutableObjectStorageConfirmBlobDeletion' : ActorMethod<
     [Array<Uint8Array>],
     undefined
   >,
-  '_caffeineStorageCreateCertificate' : ActorMethod<
+  '_immutableObjectStorageCreateCertificate' : ActorMethod<
     [string],
-    _CaffeineStorageCreateCertificateResult
+    _ImmutableObjectStorageCreateCertificateResult
   >,
-  '_caffeineStorageRefillCashier' : ActorMethod<
-    [[] | [_CaffeineStorageRefillInformation]],
-    _CaffeineStorageRefillResult
+  '_immutableObjectStorageRefillCashier' : ActorMethod<
+    [[] | [_ImmutableObjectStorageRefillInformation]],
+    _ImmutableObjectStorageRefillResult
   >,
-  '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
-  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  '_immutableObjectStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
+  '_initializeAccessControl' : ActorMethod<[], undefined>,
   'addChapter' : ActorMethod<[string, string], ConstitutionChapter>,
   'addExpenseCategory' : ActorMethod<[string], ExpenseCategory>,
   'addExpenseRecord' : ActorMethod<
@@ -101,17 +131,36 @@ export interface _SERVICE {
     [Council, string, string, string, string, string, string, string, string],
     CouncilMember
   >,
+  'addNotice' : ActorMethod<
+    [string, string, string, string, string, string],
+    NoticeRecord
+  >,
+  'addResolution' : ActorMethod<
+    [string, string, string, string, string, string, string, string, string],
+    ResolutionRecord
+  >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'bulkExport' : ActorMethod<[], string>,
+  'bulkImport' : ActorMethod<
+    [string],
+    { 'message' : string, 'success' : boolean, 'counts' : string }
+  >,
   'deleteChapter' : ActorMethod<[bigint], undefined>,
   'deleteExpenseCategory' : ActorMethod<[bigint], undefined>,
   'deleteExpenseRecord' : ActorMethod<[bigint], undefined>,
+  'deleteFamilyNode' : ActorMethod<[string], undefined>,
   'deleteIncomeRecord' : ActorMethod<[bigint], undefined>,
   'deleteMember' : ActorMethod<[bigint], undefined>,
+  'deleteNotice' : ActorMethod<[bigint], undefined>,
+  'deleteResolution' : ActorMethod<[bigint], undefined>,
   'getAllChapters' : ActorMethod<[], Array<ConstitutionChapter>>,
   'getAllExpenseCategories' : ActorMethod<[], Array<ExpenseCategory>>,
   'getAllExpenseRecords' : ActorMethod<[], Array<ExpenseRecord>>,
+  'getAllFamilyNodes' : ActorMethod<[], Array<FamilyNode>>,
   'getAllIncomeRecords' : ActorMethod<[], Array<IncomeRecord>>,
   'getAllMembers' : ActorMethod<[], Array<CouncilMember>>,
+  'getAllNotices' : ActorMethod<[], Array<NoticeRecord>>,
+  'getAllResolutions' : ActorMethod<[], Array<ResolutionRecord>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getMembersByCouncil' : ActorMethod<[Council], Array<CouncilMember>>,
@@ -119,10 +168,15 @@ export interface _SERVICE {
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'setAllFamilyNodes' : ActorMethod<[Array<FamilyNode>], undefined>,
   'updateChapter' : ActorMethod<[bigint, string, string], undefined>,
   'updateExpenseRecord' : ActorMethod<[bigint, ExpenseRecord], undefined>,
   'updateIncomeRecord' : ActorMethod<[bigint, IncomeRecord], undefined>,
   'updateMember' : ActorMethod<[bigint, CouncilMember], undefined>,
+  'upsertFamilyNode' : ActorMethod<
+    [string, string, [] | [string], bigint],
+    FamilyNode
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

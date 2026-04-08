@@ -1,0 +1,172 @@
+type _ImmutableObjectStorageRefillResult = 
+ record {
+   success: opt bool;
+   topped_up_amount: opt nat;
+ };
+type _ImmutableObjectStorageRefillInformation = record {
+                                                  proposed_top_up_amount:
+                                                   opt nat;};
+type _ImmutableObjectStorageCreateCertificateResult = 
+ record {
+   blob_hash: text;
+   method: text;
+ };
+type UserRole = 
+ variant {
+   admin;
+   guest;
+   user;
+ };
+type UserProfile = record {name: text;};
+type ResolutionRecord = 
+ record {
+   attendees: text;
+   date: text;
+   id: nat;
+   meetingType: text;
+   presiding: text;
+   resNo: text;
+   resolutions: text;
+   savedAt: text;
+   secretary: text;
+   venue: text;
+ };
+type NoticeRecord = 
+ record {
+   authority: text;
+   body: text;
+   date: text;
+   id: nat;
+   noticeNo: text;
+   savedAt: text;
+   title: text;
+ };
+type IncomeRecord = 
+ record {
+   amount: float64;
+   category: text;
+   date: text;
+   designation: text;
+   donorAddress: text;
+   donorName: text;
+   id: nat;
+   mobile: text;
+   serialNumber: nat;
+ };
+type FamilyNode = 
+ record {
+   generationLevel: nat;
+   id: text;
+   name: text;
+   parentId: opt text;
+ };
+type ExpenseRecord = 
+ record {
+   amount: float64;
+   category: text;
+   date: text;
+   id: nat;
+   mobile: text;
+   proofFileId: text;
+   recipientAddress: text;
+   recipientName: text;
+   serialNumber: nat;
+ };
+type ExpenseCategory = 
+ record {
+   id: nat;
+   name: text;
+ };
+type CouncilMember = 
+ record {
+   bloodGroup: text;
+   council: Council;
+   currentAddress: text;
+   designation: text;
+   email: text;
+   fatherName: text;
+   id: nat;
+   memberName: text;
+   mobile: text;
+   permanentAddress: text;
+   serialNumber: nat;
+ };
+type Council = 
+ variant {
+   karyanirbahaParishad;
+   sadharanParishad;
+   upadeshataParishad;
+ };
+type ConstitutionChapter = 
+ record {
+   chapterNumber: nat;
+   content: text;
+   id: nat;
+   title: text;
+ };
+service : {
+  _immutableObjectStorageBlobsAreLive: (hashes: vec blob) -> (vec bool) query;
+  _immutableObjectStorageBlobsToDelete: () -> (vec blob) query;
+  _immutableObjectStorageConfirmBlobDeletion: (blobs: vec blob) -> ();
+  _immutableObjectStorageCreateCertificate: (blobHash: text) ->
+   (_ImmutableObjectStorageCreateCertificateResult);
+  _immutableObjectStorageRefillCashier: (refillInformation:
+   opt _ImmutableObjectStorageRefillInformation) ->
+   (_ImmutableObjectStorageRefillResult);
+  _immutableObjectStorageUpdateGatewayPrincipals: () -> ();
+  _initializeAccessControl: () -> ();
+  addChapter: (title: text, content: text) -> (ConstitutionChapter);
+  addExpenseCategory: (name: text) -> (ExpenseCategory);
+  addExpenseRecord: (date: text, category: text, recipientName: text,
+   recipientAddress: text, mobile: text, amount: float64, proofFileId:
+   text) -> (ExpenseRecord);
+  addIncomeRecord: (date: text, category: text, donorName: text,
+   donorAddress: text, mobile: text, amount: float64, designation: text) ->
+   (IncomeRecord);
+  addMember: (council: Council, memberName: text, fatherName: text, mobile:
+   text, email: text, bloodGroup: text, currentAddress: text,
+   permanentAddress: text, designation: text) -> (CouncilMember);
+  addNotice: (date: text, noticeNo: text, title: text, body: text, authority:
+   text, savedAt: text) -> (NoticeRecord);
+  addResolution: (date: text, resNo: text, meetingType: text, venue: 
+   text, presiding: text, attendees: text, resolutions: text, secretary:
+   text, savedAt: text) -> (ResolutionRecord);
+  assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  bulkExport: () -> (text) query;
+  bulkImport: (jsonData: text) ->
+   (record {
+      counts: text;
+      message: text;
+      success: bool;
+    });
+  deleteChapter: (id: nat) -> ();
+  deleteExpenseCategory: (id: nat) -> ();
+  deleteExpenseRecord: (id: nat) -> ();
+  deleteFamilyNode: (id: text) -> ();
+  deleteIncomeRecord: (id: nat) -> ();
+  deleteMember: (id: nat) -> ();
+  deleteNotice: (id: nat) -> ();
+  deleteResolution: (id: nat) -> ();
+  getAllChapters: () -> (vec ConstitutionChapter) query;
+  getAllExpenseCategories: () -> (vec ExpenseCategory) query;
+  getAllExpenseRecords: () -> (vec ExpenseRecord) query;
+  getAllFamilyNodes: () -> (vec FamilyNode) query;
+  getAllIncomeRecords: () -> (vec IncomeRecord) query;
+  getAllMembers: () -> (vec CouncilMember) query;
+  getAllNotices: () -> (vec NoticeRecord) query;
+  getAllResolutions: () -> (vec ResolutionRecord) query;
+  getCallerUserProfile: () -> (opt UserProfile) query;
+  getCallerUserRole: () -> (UserRole) query;
+  getMembersByCouncil: (council: Council) -> (vec CouncilMember) query;
+  getNextSerialNumber: () -> (nat) query;
+  getUserProfile: (user: principal) -> (opt UserProfile) query;
+  isCallerAdmin: () -> (bool) query;
+  saveCallerUserProfile: (profile: UserProfile) -> ();
+  setAllFamilyNodes: (nodes: vec FamilyNode) -> ();
+  updateChapter: (id: nat, title: text, content: text) -> ();
+  updateExpenseRecord: (id: nat, updated: ExpenseRecord) -> ();
+  updateIncomeRecord: (id: nat, updated: IncomeRecord) -> ();
+  updateMember: (id: nat, updated: CouncilMember) -> ();
+  upsertFamilyNode: (id: text, name: text, parentId: opt text,
+   generationLevel: nat) -> (FamilyNode);
+}

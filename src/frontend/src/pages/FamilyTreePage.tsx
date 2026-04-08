@@ -393,25 +393,12 @@ export default function FamilyTreePage({
       }
       const canisterNodes = await actor.getAllFamilyNodes();
       if (canisterNodes && canisterNodes.length > 0) {
-        const mapped: FamilyNode[] = canisterNodes.map(
-          (n: {
-            id: string;
-            name: string;
-            parentId: { __kind__: string; value?: string } | null;
-            generationLevel: bigint | number;
-          }) => ({
-            id: n.id,
-            name: n.name,
-            parentId:
-              n.parentId &&
-              (n.parentId as { __kind__: string; value?: string }).__kind__ ===
-                "Some"
-                ? ((n.parentId as { __kind__: string; value?: string }).value ??
-                  null)
-                : null,
-            generationLevel: Number(n.generationLevel),
-          }),
-        );
+        const mapped: FamilyNode[] = canisterNodes.map((n) => ({
+          id: n.id,
+          name: n.name,
+          parentId: n.parentId ?? null,
+          generationLevel: Number(n.generationLevel),
+        }));
         setNodes(mapped);
       } else {
         // Migration: push localStorage data to canister
@@ -421,9 +408,7 @@ export default function FamilyTreePage({
           const toSave = local.map((n) => ({
             id: n.id,
             name: n.name,
-            parentId: n.parentId
-              ? { __kind__: "Some" as const, value: n.parentId }
-              : { __kind__: "None" as const },
+            parentId: n.parentId ?? undefined,
             generationLevel: BigInt(n.generationLevel),
           }));
           if (actor) await actor.setAllFamilyNodes(toSave);
@@ -454,9 +439,7 @@ export default function FamilyTreePage({
     const toSave = nodes.map((n) => ({
       id: n.id,
       name: n.name,
-      parentId: n.parentId
-        ? { __kind__: "Some" as const, value: n.parentId }
-        : { __kind__: "None" as const },
+      parentId: n.parentId ?? undefined,
       generationLevel: BigInt(n.generationLevel),
     }));
     if (actor) actor.setAllFamilyNodes(toSave).catch(console.error);

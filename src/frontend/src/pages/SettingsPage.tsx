@@ -5,9 +5,12 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  AlertTriangle,
   Building2,
+  Download,
   Eye,
   EyeOff,
+  Loader2,
   Plus,
   Save,
   Trash2,
@@ -16,12 +19,17 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import type { backendInterface } from "../backend.d";
 import ModuleHeader from "../components/ModuleHeader";
 import {
+  DEFAULT_SUPER_ADMIN_EMAIL,
+  DEFAULT_SUPER_ADMIN_PASSWORD,
   addAdmin,
   getAdmins,
   getSuperAdmin,
+  loginAdmin,
   removeAdmin,
+  resetSuperAdminToDefault,
   updateSuperAdmin,
 } from "../store/adminAuthStore";
 import {
@@ -33,12 +41,31 @@ import {
 interface Props {
   onSave: () => void;
   isSuperAdmin?: boolean;
+  actor?: backendInterface | null;
 }
 
-export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
+export default function SettingsPage({ onSave, isSuperAdmin, actor }: Props) {
   const [settings, setSettings] = useState<OrgSettings>(loadSettings);
   const [original] = useState<OrgSettings>(loadSettings);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const restoreFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Backup & Restore state
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [backupMsg, setBackupMsg] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [restoreMsg, setRestoreMsg] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+  const [pendingRestoreData, setPendingRestoreData] = useState<string | null>(
+    null,
+  );
+  const lastBackupDate = localStorage.getItem("apon_last_backup_date");
 
   // Super admin credentials form
   const superAdmin = getSuperAdmin();
@@ -48,6 +75,11 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
   const [saShowPass, setSaShowPass] = useState(false);
   const [saShowConfirm, setSaShowConfirm] = useState(false);
   const [saError, setSaError] = useState("");
+
+  // Password reset with current password verification
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   // Admin list
   const [admins, setAdmins] = useState(() => getAdmins());
@@ -88,22 +120,54 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
   function handleSuperAdminUpdate(e: React.FormEvent) {
     e.preventDefault();
     setSaError("");
+    setResetSuccess(false);
+    const currentSA = getSuperAdmin();
+    if (!currentSA) {
+      setSaError("সুপার এডমিন পাওয়া যায়নি");
+      return;
+    }
+    // Verify current password
+    if (!currentPassword) {
+      setSaError("বর্তমান পাসওয়ার্ড দিন");
+      return;
+    }
+    const verified = loginAdmin(currentSA.email, currentPassword);
+    if (!verified) {
+      setSaError("বর্তমান পাসওয়ার্ড সঠিক নয়");
+      return;
+    }
     if (!saEmail) {
       setSaError("ইমেইল আবশ্যক");
       return;
     }
     if (saPassword.length < 6) {
-      setSaError("পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে");
+      setSaError("নতুন পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে");
       return;
     }
     if (saPassword !== saConfirm) {
-      setSaError("পাসওয়ার্ড মিলছে না");
+      setSaError("নতুন পাসওয়ার্ড মিলছে না");
       return;
     }
     updateSuperAdmin(saEmail, saPassword);
+    setCurrentPassword("");
     setSaPassword("");
     setSaConfirm("");
-    toast.success("সুপার এডমিন তথ্য আপডেট হয়েছে");
+    setResetSuccess(true);
+    toast.success("পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে");
+  }
+
+  function handleResetToDefault() {
+    resetSuperAdminToDefault();
+    setSaEmail(DEFAULT_SUPER_ADMIN_EMAIL);
+    setCurrentPassword("");
+    setSaPassword("");
+    setSaConfirm("");
+    setSaError("");
+    setResetSuccess(true);
+    toast.success(
+      `ডিফল্ট পাসওয়ার্ড রিসেট হয়েছে। ইমেইল: ${DEFAULT_SUPER_ADMIN_EMAIL} | পাসওয়ার্ড: ${DEFAULT_SUPER_ADMIN_PASSWORD}`,
+      { duration: 8000 },
+    );
   }
 
   function handleAddAdmin(e: React.FormEvent) {
@@ -129,6 +193,136 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
     removeAdmin(email);
     setAdmins(getAdmins());
     toast.success("এডমিন মুছে ফেলা হয়েছে");
+  }
+
+  async function handleBackup() {
+    setBackupLoading(true);
+    setBackupMsg(null);
+    try {
+      let canisterData: unknown = {};
+      if (actor) {
+        const json = await actor.bulkExport();
+        try {
+          canisterData = JSON.parse(json);
+        } catch {
+          canisterData = json;
+        }
+      }
+      const parseLocal = (key: string) => {
+        try {
+          return JSON.parse(localStorage.getItem(key) ?? "null");
+        } catch {
+          return null;
+        }
+      };
+      const backup = {
+        version: "1.0",
+        exportDate: new Date().toISOString(),
+        canisterData,
+        localData: {
+          bloodDonors: parseLocal("bloodDonors_external"),
+          settings: parseLocal("aponSettings"),
+          superAdmin: parseLocal("apon_superadmin"),
+          admins: parseLocal("apon_admins"),
+        },
+      };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const dateStr = new Date().toISOString().split("T")[0];
+      a.href = url;
+      a.download = `apon-foundation-backup-${dateStr}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      const now = new Date().toLocaleString("bn-BD");
+      localStorage.setItem("apon_last_backup_date", now);
+      setBackupMsg({ type: "success", text: "✅ ব্যাকআপ সফলভাবে ডাউনলোড হয়েছে!" });
+    } catch (err) {
+      setBackupMsg({
+        type: "error",
+        text: `❌ ব্যাকআপ ব্যর্থ হয়েছে: ${String(err)}`,
+      });
+    } finally {
+      setBackupLoading(false);
+    }
+  }
+
+  function handleRestoreFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const content = ev.target?.result as string;
+      setPendingRestoreData(content);
+      setShowRestoreConfirm(true);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
+
+  async function handleRestoreConfirm() {
+    if (!pendingRestoreData) return;
+    setRestoreLoading(true);
+    setRestoreMsg(null);
+    setShowRestoreConfirm(false);
+    try {
+      let backup: {
+        version?: string;
+        canisterData?: unknown;
+        localData?: {
+          bloodDonors?: unknown;
+          settings?: unknown;
+          superAdmin?: unknown;
+          admins?: unknown;
+        };
+      };
+      try {
+        backup = JSON.parse(pendingRestoreData);
+      } catch {
+        throw new Error("ফাইলটি বৈধ JSON নয়");
+      }
+      if (!backup.version || !backup.canisterData) {
+        throw new Error("ফাইলটি সঠিক ব্যাকআপ ফর্ম্যাটে নেই");
+      }
+      // Restore canister data
+      let counts = "";
+      if (actor && backup.canisterData) {
+        const result = await actor.bulkImport(
+          JSON.stringify(backup.canisterData),
+        );
+        if (!result.success) throw new Error(result.message);
+        counts = result.counts;
+      }
+      // Restore localStorage
+      const ld = backup.localData ?? {};
+      if (ld.bloodDonors !== null && ld.bloodDonors !== undefined)
+        localStorage.setItem(
+          "bloodDonors_external",
+          JSON.stringify(ld.bloodDonors),
+        );
+      if (ld.settings !== null && ld.settings !== undefined)
+        localStorage.setItem("aponSettings", JSON.stringify(ld.settings));
+      if (ld.superAdmin !== null && ld.superAdmin !== undefined)
+        localStorage.setItem("apon_superadmin", JSON.stringify(ld.superAdmin));
+      if (ld.admins !== null && ld.admins !== undefined)
+        localStorage.setItem("apon_admins", JSON.stringify(ld.admins));
+
+      setRestoreMsg({
+        type: "success",
+        text: `✅ রিস্টোর সফল হয়েছে! ${counts || ""} পেজ ২ সেকেন্ডে রিলোড হবে।`,
+      });
+      setTimeout(() => window.location.reload(), 2000);
+    } catch (err) {
+      setRestoreMsg({
+        type: "error",
+        text: `❌ রিস্টোর ব্যর্থ হয়েছে: ${String(err)}`,
+      });
+    } finally {
+      setRestoreLoading(false);
+      setPendingRestoreData(null);
+    }
   }
 
   const logoSrc =
@@ -468,34 +662,91 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base" style={{ color: "#1a4d2e" }}>
-                  সুপার এডমিন একাউন্ট
+                  পাসওয়ার্ড রিসেট
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Default credentials info box */}
+                <div
+                  className="rounded-lg p-3 mb-4 text-xs space-y-1"
+                  style={{
+                    background: "#f0fdf4",
+                    border: "1px solid #86efac",
+                    color: "#166534",
+                  }}
+                >
+                  <p className="font-semibold">ডিফল্ট সুপার এডমিন তথ্য:</p>
+                  <p>ইমেইল: {DEFAULT_SUPER_ADMIN_EMAIL}</p>
+                  <p>পাসওয়ার্ড: {DEFAULT_SUPER_ADMIN_PASSWORD}</p>
+                </div>
+
                 <form onSubmit={handleSuperAdminUpdate} className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="sa-email">নতুন ইমেইল আইডি</Label>
-                    <Input
+                    <Label htmlFor="sa-email">ইমেইল আইডি</Label>
+                    <input
                       id="sa-email"
                       type="email"
                       value={saEmail}
                       onChange={(e) => setSaEmail(e.target.value)}
                       placeholder="admin@aponfoundation.org"
                       required
+                      className="w-full px-3 py-2 rounded-md border text-sm"
+                      style={{
+                        borderColor: "#d1d5db",
+                        background: "#f9fafb",
+                        color: "#111827",
+                      }}
                       data-ocid="settings.sa_email.input"
                     />
                   </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sa-current-password">বর্তমান পাসওয়ার্ড</Label>
+                    <div className="relative">
+                      <input
+                        id="sa-current-password"
+                        type={showCurrentPass ? "text" : "password"}
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="বর্তমান পাসওয়ার্ড দিন"
+                        className="w-full px-3 py-2 pr-10 rounded-md border text-sm"
+                        style={{
+                          borderColor: "#d1d5db",
+                          background: "#f9fafb",
+                          color: "#111827",
+                        }}
+                        data-ocid="settings.sa_current_password.input"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPass((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showCurrentPass ? (
+                          <EyeOff size={16} />
+                        ) : (
+                          <Eye size={16} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="space-y-1.5">
                     <Label htmlFor="sa-password">নতুন পাসওয়ার্ড</Label>
                     <div className="relative">
-                      <Input
+                      <input
                         id="sa-password"
                         type={saShowPass ? "text" : "password"}
                         value={saPassword}
                         onChange={(e) => setSaPassword(e.target.value)}
                         placeholder="কমপক্ষে ৬ অক্ষর"
                         required
-                        className="pr-10"
+                        className="w-full px-3 py-2 pr-10 rounded-md border text-sm"
+                        style={{
+                          borderColor: "#d1d5db",
+                          background: "#f9fafb",
+                          color: "#111827",
+                        }}
                         data-ocid="settings.sa_password.input"
                       />
                       <button
@@ -507,17 +758,23 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
                       </button>
                     </div>
                   </div>
+
                   <div className="space-y-1.5">
-                    <Label htmlFor="sa-confirm">পাসওয়ার্ড নিশ্চিত করুন</Label>
+                    <Label htmlFor="sa-confirm">নতুন পাসওয়ার্ড নিশ্চিত করুন</Label>
                     <div className="relative">
-                      <Input
+                      <input
                         id="sa-confirm"
                         type={saShowConfirm ? "text" : "password"}
                         value={saConfirm}
                         onChange={(e) => setSaConfirm(e.target.value)}
                         placeholder="পাসওয়ার্ড পুনরায় দিন"
                         required
-                        className="pr-10"
+                        className="w-full px-3 py-2 pr-10 rounded-md border text-sm"
+                        style={{
+                          borderColor: "#d1d5db",
+                          background: "#f9fafb",
+                          color: "#111827",
+                        }}
                         data-ocid="settings.sa_confirm.input"
                       />
                       <button
@@ -533,23 +790,48 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
                       </button>
                     </div>
                   </div>
+
                   {saError && (
                     <p
-                      className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"
+                      className="text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2"
+                      style={{ color: "#dc2626" }}
                       data-ocid="settings.sa.error_state"
                     >
-                      {saError}
+                      ⚠️ {saError}
                     </p>
                   )}
-                  <Button
-                    type="submit"
-                    style={{ background: "#1a4d2e" }}
-                    className="text-white gap-2"
-                    data-ocid="settings.sa.save_button"
-                  >
-                    <Save size={16} />
-                    পরিবর্তন সংরক্ষণ করুন
-                  </Button>
+                  {resetSuccess && (
+                    <p
+                      className="text-sm bg-green-50 border border-green-200 rounded-lg px-3 py-2"
+                      style={{ color: "#166534" }}
+                      data-ocid="settings.sa.success_state"
+                    >
+                      ✅ পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে
+                    </p>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                    <Button
+                      type="submit"
+                      style={{ background: "#1a4d2e" }}
+                      className="text-white gap-2 flex-1"
+                      data-ocid="settings.sa.save_button"
+                    >
+                      <Save size={16} />
+                      পাসওয়ার্ড পরিবর্তন করুন
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleResetToDefault}
+                      className="gap-2 flex-1"
+                      style={{ borderColor: "#dc2626", color: "#dc2626" }}
+                      data-ocid="settings.sa.reset_default_button"
+                    >
+                      <AlertTriangle size={16} />
+                      ডিফল্ট পাসওয়ার্ড রিসেট
+                    </Button>
+                  </div>
                 </form>
               </CardContent>
             </Card>
@@ -692,6 +974,185 @@ export default function SettingsPage({ onSave, isSuperAdmin }: Props) {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Backup & Restore Section */}
+      <div
+        className="rounded-xl border-2 p-6 space-y-4"
+        style={{ background: "#0f2d1a", borderColor: "#D4AF37" }}
+        data-ocid="settings.backup_restore.section"
+      >
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-2xl">💾</span>
+          <div>
+            <h2 className="text-lg font-bold" style={{ color: "#D4AF37" }}>
+              ডেটা ব্যাকআপ ও রিস্টোর
+            </h2>
+            <p className="text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
+              সব মডিউলের ডেটা একটি ফাইলে ব্যাকআপ করুন এবং প্রয়োজনে ফিরিয়ে আনুন
+            </p>
+          </div>
+        </div>
+        {lastBackupDate && (
+          <p className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+            শেষ ব্যাকআপ: {lastBackupDate}
+          </p>
+        )}
+        <Separator style={{ background: "rgba(212,175,55,0.3)" }} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Backup */}
+          <div
+            className="rounded-lg p-4 space-y-3"
+            style={{
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(212,175,55,0.2)",
+            }}
+          >
+            <h3 className="font-semibold text-sm" style={{ color: "#D4AF37" }}>
+              📤 ব্যাকআপ করুন
+            </h3>
+            <p className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>
+              সদস্য, আর্থিক তথ্য, নোটিশ, রেজুলেশন, বংশপরম্পরা ও রক্তদাতা তালিকা সহ সব ডেটা
+              একটি ফাইলে সংরক্ষণ করুন।
+            </p>
+            <Button
+              onClick={handleBackup}
+              disabled={backupLoading}
+              className="w-full gap-2 font-semibold"
+              style={{ background: "#1a6b35", color: "white" }}
+              data-ocid="settings.backup.button"
+            >
+              {backupLoading ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              {backupLoading ? "ব্যাকআপ হচ্ছে..." : "সম্পূর্ণ ডেটা ব্যাকআপ করুন"}
+            </Button>
+            {backupMsg && (
+              <p
+                className="text-xs rounded px-3 py-2"
+                style={{
+                  background:
+                    backupMsg.type === "success"
+                      ? "rgba(34,197,94,0.15)"
+                      : "rgba(239,68,68,0.15)",
+                  color: backupMsg.type === "success" ? "#4ade80" : "#f87171",
+                  border: `1px solid ${backupMsg.type === "success" ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`,
+                }}
+                data-ocid="settings.backup.status"
+              >
+                {backupMsg.text}
+              </p>
+            )}
+          </div>
+
+          {/* Restore */}
+          <div
+            className="rounded-lg p-4 space-y-3"
+            style={{
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(212,175,55,0.2)",
+            }}
+          >
+            <h3 className="font-semibold text-sm" style={{ color: "#D4AF37" }}>
+              📥 রিস্টোর করুন
+            </h3>
+            <p className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>
+              পূর্বে নেওয়া ব্যাকআপ ফাইল (.json) আপলোড করে সব ডেটা পুনরুদ্ধার করুন।
+            </p>
+            <Button
+              onClick={() => restoreFileInputRef.current?.click()}
+              disabled={restoreLoading}
+              className="w-full gap-2 font-semibold"
+              style={{ background: "#b45309", color: "white" }}
+              data-ocid="settings.restore.button"
+            >
+              {restoreLoading ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Upload size={16} />
+              )}
+              {restoreLoading ? "রিস্টোর হচ্ছে..." : "ব্যাকআপ থেকে রিস্টোর করুন"}
+            </Button>
+            <input
+              ref={restoreFileInputRef}
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              onChange={handleRestoreFileSelect}
+            />
+            {restoreMsg && (
+              <p
+                className="text-xs rounded px-3 py-2"
+                style={{
+                  background:
+                    restoreMsg.type === "success"
+                      ? "rgba(34,197,94,0.15)"
+                      : "rgba(239,68,68,0.15)",
+                  color: restoreMsg.type === "success" ? "#4ade80" : "#f87171",
+                  border: `1px solid ${restoreMsg.type === "success" ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`,
+                }}
+                data-ocid="settings.restore.status"
+              >
+                {restoreMsg.text}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Restore Confirmation Modal */}
+      {showRestoreConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.75)" }}
+          data-ocid="settings.restore_confirm.modal"
+        >
+          <div
+            className="w-full max-w-md rounded-xl p-6 space-y-4 shadow-2xl"
+            style={{ background: "#0f2d1a", border: "2px solid #D4AF37" }}
+          >
+            <div className="flex items-center gap-3">
+              <AlertTriangle
+                size={24}
+                style={{ color: "#f59e0b", flexShrink: 0 }}
+              />
+              <h3 className="text-lg font-bold" style={{ color: "#D4AF37" }}>
+                সতর্কতা
+              </h3>
+            </div>
+            <p className="text-sm" style={{ color: "rgba(255,255,255,0.85)" }}>
+              রিস্টোর করলে বর্তমান সব ডেটা মুছে যাবে এবং ব্যাকআপের ডেটা দিয়ে প্রতিস্থাপিত
+              হবে। আপনি কি নিশ্চিত?
+            </p>
+            <div className="flex gap-3 pt-2">
+              <Button
+                onClick={handleRestoreConfirm}
+                className="flex-1 font-semibold"
+                style={{ background: "#b45309", color: "white" }}
+                data-ocid="settings.restore_confirm.yes_button"
+              >
+                হ্যাঁ, রিস্টোর করুন
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowRestoreConfirm(false);
+                  setPendingRestoreData(null);
+                }}
+                className="flex-1"
+                style={{
+                  borderColor: "rgba(212,175,55,0.4)",
+                  color: "rgba(255,255,255,0.8)",
+                }}
+                data-ocid="settings.restore_confirm.cancel_button"
+              >
+                বাতিল
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="pb-6">
         <Button

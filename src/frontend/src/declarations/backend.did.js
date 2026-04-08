@@ -8,14 +8,14 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const _CaffeineStorageCreateCertificateResult = IDL.Record({
+export const _ImmutableObjectStorageCreateCertificateResult = IDL.Record({
   'method' : IDL.Text,
   'blob_hash' : IDL.Text,
 });
-export const _CaffeineStorageRefillInformation = IDL.Record({
+export const _ImmutableObjectStorageRefillInformation = IDL.Record({
   'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
 });
-export const _CaffeineStorageRefillResult = IDL.Record({
+export const _ImmutableObjectStorageRefillResult = IDL.Record({
   'success' : IDL.Opt(IDL.Bool),
   'topped_up_amount' : IDL.Opt(IDL.Nat),
 });
@@ -69,41 +69,68 @@ export const CouncilMember = IDL.Record({
   'currentAddress' : IDL.Text,
   'mobile' : IDL.Text,
 });
+export const NoticeRecord = IDL.Record({
+  'id' : IDL.Nat,
+  'title' : IDL.Text,
+  'body' : IDL.Text,
+  'date' : IDL.Text,
+  'savedAt' : IDL.Text,
+  'authority' : IDL.Text,
+  'noticeNo' : IDL.Text,
+});
+export const ResolutionRecord = IDL.Record({
+  'id' : IDL.Nat,
+  'resolutions' : IDL.Text,
+  'venue' : IDL.Text,
+  'date' : IDL.Text,
+  'meetingType' : IDL.Text,
+  'secretary' : IDL.Text,
+  'attendees' : IDL.Text,
+  'savedAt' : IDL.Text,
+  'presiding' : IDL.Text,
+  'resNo' : IDL.Text,
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const FamilyNode = IDL.Record({
+  'id' : IDL.Text,
+  'name' : IDL.Text,
+  'parentId' : IDL.Opt(IDL.Text),
+  'generationLevel' : IDL.Nat,
+});
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
 
 export const idlService = IDL.Service({
-  '_caffeineStorageBlobIsLive' : IDL.Func(
-      [IDL.Vec(IDL.Nat8)],
-      [IDL.Bool],
+  '_immutableObjectStorageBlobsAreLive' : IDL.Func(
+      [IDL.Vec(IDL.Vec(IDL.Nat8))],
+      [IDL.Vec(IDL.Bool)],
       ['query'],
     ),
-  '_caffeineStorageBlobsToDelete' : IDL.Func(
+  '_immutableObjectStorageBlobsToDelete' : IDL.Func(
       [],
       [IDL.Vec(IDL.Vec(IDL.Nat8))],
       ['query'],
     ),
-  '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
+  '_immutableObjectStorageConfirmBlobDeletion' : IDL.Func(
       [IDL.Vec(IDL.Vec(IDL.Nat8))],
       [],
       [],
     ),
-  '_caffeineStorageCreateCertificate' : IDL.Func(
+  '_immutableObjectStorageCreateCertificate' : IDL.Func(
       [IDL.Text],
-      [_CaffeineStorageCreateCertificateResult],
+      [_ImmutableObjectStorageCreateCertificateResult],
       [],
     ),
-  '_caffeineStorageRefillCashier' : IDL.Func(
-      [IDL.Opt(_CaffeineStorageRefillInformation)],
-      [_CaffeineStorageRefillResult],
+  '_immutableObjectStorageRefillCashier' : IDL.Func(
+      [IDL.Opt(_ImmutableObjectStorageRefillInformation)],
+      [_ImmutableObjectStorageRefillResult],
       [],
     ),
-  '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
-  '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  '_immutableObjectStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
+  '_initializeAccessControl' : IDL.Func([], [], []),
   'addChapter' : IDL.Func([IDL.Text, IDL.Text], [ConstitutionChapter], []),
   'addExpenseCategory' : IDL.Func([IDL.Text], [ExpenseCategory], []),
   'addExpenseRecord' : IDL.Func(
@@ -131,12 +158,47 @@ export const idlService = IDL.Service({
       [CouncilMember],
       [],
     ),
+  'addNotice' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [NoticeRecord],
+      [],
+    ),
+  'addResolution' : IDL.Func(
+      [
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+      ],
+      [ResolutionRecord],
+      [],
+    ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'bulkExport' : IDL.Func([], [IDL.Text], ['query']),
+  'bulkImport' : IDL.Func(
+      [IDL.Text],
+      [
+        IDL.Record({
+          'message' : IDL.Text,
+          'success' : IDL.Bool,
+          'counts' : IDL.Text,
+        }),
+      ],
+      [],
+    ),
   'deleteChapter' : IDL.Func([IDL.Nat], [], []),
   'deleteExpenseCategory' : IDL.Func([IDL.Nat], [], []),
   'deleteExpenseRecord' : IDL.Func([IDL.Nat], [], []),
+  'deleteFamilyNode' : IDL.Func([IDL.Text], [], []),
   'deleteIncomeRecord' : IDL.Func([IDL.Nat], [], []),
   'deleteMember' : IDL.Func([IDL.Nat], [], []),
+  'deleteNotice' : IDL.Func([IDL.Nat], [], []),
+  'deleteResolution' : IDL.Func([IDL.Nat], [], []),
   'getAllChapters' : IDL.Func([], [IDL.Vec(ConstitutionChapter)], ['query']),
   'getAllExpenseCategories' : IDL.Func(
       [],
@@ -144,8 +206,11 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getAllExpenseRecords' : IDL.Func([], [IDL.Vec(ExpenseRecord)], ['query']),
+  'getAllFamilyNodes' : IDL.Func([], [IDL.Vec(FamilyNode)], ['query']),
   'getAllIncomeRecords' : IDL.Func([], [IDL.Vec(IncomeRecord)], ['query']),
   'getAllMembers' : IDL.Func([], [IDL.Vec(CouncilMember)], ['query']),
+  'getAllNotices' : IDL.Func([], [IDL.Vec(NoticeRecord)], ['query']),
+  'getAllResolutions' : IDL.Func([], [IDL.Vec(ResolutionRecord)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getMembersByCouncil' : IDL.Func(
@@ -161,23 +226,29 @@ export const idlService = IDL.Service({
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'setAllFamilyNodes' : IDL.Func([IDL.Vec(FamilyNode)], [], []),
   'updateChapter' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [], []),
   'updateExpenseRecord' : IDL.Func([IDL.Nat, ExpenseRecord], [], []),
   'updateIncomeRecord' : IDL.Func([IDL.Nat, IncomeRecord], [], []),
   'updateMember' : IDL.Func([IDL.Nat, CouncilMember], [], []),
+  'upsertFamilyNode' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Opt(IDL.Text), IDL.Nat],
+      [FamilyNode],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
-  const _CaffeineStorageCreateCertificateResult = IDL.Record({
+  const _ImmutableObjectStorageCreateCertificateResult = IDL.Record({
     'method' : IDL.Text,
     'blob_hash' : IDL.Text,
   });
-  const _CaffeineStorageRefillInformation = IDL.Record({
+  const _ImmutableObjectStorageRefillInformation = IDL.Record({
     'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
   });
-  const _CaffeineStorageRefillResult = IDL.Record({
+  const _ImmutableObjectStorageRefillResult = IDL.Record({
     'success' : IDL.Opt(IDL.Bool),
     'topped_up_amount' : IDL.Opt(IDL.Nat),
   });
@@ -228,41 +299,68 @@ export const idlFactory = ({ IDL }) => {
     'currentAddress' : IDL.Text,
     'mobile' : IDL.Text,
   });
+  const NoticeRecord = IDL.Record({
+    'id' : IDL.Nat,
+    'title' : IDL.Text,
+    'body' : IDL.Text,
+    'date' : IDL.Text,
+    'savedAt' : IDL.Text,
+    'authority' : IDL.Text,
+    'noticeNo' : IDL.Text,
+  });
+  const ResolutionRecord = IDL.Record({
+    'id' : IDL.Nat,
+    'resolutions' : IDL.Text,
+    'venue' : IDL.Text,
+    'date' : IDL.Text,
+    'meetingType' : IDL.Text,
+    'secretary' : IDL.Text,
+    'attendees' : IDL.Text,
+    'savedAt' : IDL.Text,
+    'presiding' : IDL.Text,
+    'resNo' : IDL.Text,
+  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
+  const FamilyNode = IDL.Record({
+    'id' : IDL.Text,
+    'name' : IDL.Text,
+    'parentId' : IDL.Opt(IDL.Text),
+    'generationLevel' : IDL.Nat,
+  });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
   
   return IDL.Service({
-    '_caffeineStorageBlobIsLive' : IDL.Func(
-        [IDL.Vec(IDL.Nat8)],
-        [IDL.Bool],
+    '_immutableObjectStorageBlobsAreLive' : IDL.Func(
+        [IDL.Vec(IDL.Vec(IDL.Nat8))],
+        [IDL.Vec(IDL.Bool)],
         ['query'],
       ),
-    '_caffeineStorageBlobsToDelete' : IDL.Func(
+    '_immutableObjectStorageBlobsToDelete' : IDL.Func(
         [],
         [IDL.Vec(IDL.Vec(IDL.Nat8))],
         ['query'],
       ),
-    '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
+    '_immutableObjectStorageConfirmBlobDeletion' : IDL.Func(
         [IDL.Vec(IDL.Vec(IDL.Nat8))],
         [],
         [],
       ),
-    '_caffeineStorageCreateCertificate' : IDL.Func(
+    '_immutableObjectStorageCreateCertificate' : IDL.Func(
         [IDL.Text],
-        [_CaffeineStorageCreateCertificateResult],
+        [_ImmutableObjectStorageCreateCertificateResult],
         [],
       ),
-    '_caffeineStorageRefillCashier' : IDL.Func(
-        [IDL.Opt(_CaffeineStorageRefillInformation)],
-        [_CaffeineStorageRefillResult],
+    '_immutableObjectStorageRefillCashier' : IDL.Func(
+        [IDL.Opt(_ImmutableObjectStorageRefillInformation)],
+        [_ImmutableObjectStorageRefillResult],
         [],
       ),
-    '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
-    '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    '_immutableObjectStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
+    '_initializeAccessControl' : IDL.Func([], [], []),
     'addChapter' : IDL.Func([IDL.Text, IDL.Text], [ConstitutionChapter], []),
     'addExpenseCategory' : IDL.Func([IDL.Text], [ExpenseCategory], []),
     'addExpenseRecord' : IDL.Func(
@@ -306,12 +404,47 @@ export const idlFactory = ({ IDL }) => {
         [CouncilMember],
         [],
       ),
+    'addNotice' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [NoticeRecord],
+        [],
+      ),
+    'addResolution' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+        ],
+        [ResolutionRecord],
+        [],
+      ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'bulkExport' : IDL.Func([], [IDL.Text], ['query']),
+    'bulkImport' : IDL.Func(
+        [IDL.Text],
+        [
+          IDL.Record({
+            'message' : IDL.Text,
+            'success' : IDL.Bool,
+            'counts' : IDL.Text,
+          }),
+        ],
+        [],
+      ),
     'deleteChapter' : IDL.Func([IDL.Nat], [], []),
     'deleteExpenseCategory' : IDL.Func([IDL.Nat], [], []),
     'deleteExpenseRecord' : IDL.Func([IDL.Nat], [], []),
+    'deleteFamilyNode' : IDL.Func([IDL.Text], [], []),
     'deleteIncomeRecord' : IDL.Func([IDL.Nat], [], []),
     'deleteMember' : IDL.Func([IDL.Nat], [], []),
+    'deleteNotice' : IDL.Func([IDL.Nat], [], []),
+    'deleteResolution' : IDL.Func([IDL.Nat], [], []),
     'getAllChapters' : IDL.Func([], [IDL.Vec(ConstitutionChapter)], ['query']),
     'getAllExpenseCategories' : IDL.Func(
         [],
@@ -319,8 +452,11 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getAllExpenseRecords' : IDL.Func([], [IDL.Vec(ExpenseRecord)], ['query']),
+    'getAllFamilyNodes' : IDL.Func([], [IDL.Vec(FamilyNode)], ['query']),
     'getAllIncomeRecords' : IDL.Func([], [IDL.Vec(IncomeRecord)], ['query']),
     'getAllMembers' : IDL.Func([], [IDL.Vec(CouncilMember)], ['query']),
+    'getAllNotices' : IDL.Func([], [IDL.Vec(NoticeRecord)], ['query']),
+    'getAllResolutions' : IDL.Func([], [IDL.Vec(ResolutionRecord)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getMembersByCouncil' : IDL.Func(
@@ -336,10 +472,16 @@ export const idlFactory = ({ IDL }) => {
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'setAllFamilyNodes' : IDL.Func([IDL.Vec(FamilyNode)], [], []),
     'updateChapter' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [], []),
     'updateExpenseRecord' : IDL.Func([IDL.Nat, ExpenseRecord], [], []),
     'updateIncomeRecord' : IDL.Func([IDL.Nat, IncomeRecord], [], []),
     'updateMember' : IDL.Func([IDL.Nat, CouncilMember], [], []),
+    'upsertFamilyNode' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Opt(IDL.Text), IDL.Nat],
+        [FamilyNode],
+        [],
+      ),
   });
 };
 
